@@ -464,6 +464,32 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
   box-shadow: 0 2px 4px rgba(0,0,0,0.15) inset, 0 1px 2px rgba(0,0,0,0.10) inset !important;
   transform: scale(0.98) translateY(1px);
 }
+/* Sidebar / nav rows must NEVER look like sculpt action buttons.
+   Production neumorphic apps (Apple System Settings, Things 3, Bear,
+   Linear) all keep navigation rows flat — pill-shaped raised buttons
+   inside a sidebar list look like UI bumps, not nav items. Override
+   the global rule for any button or icon container inside aside/nav. */
+[data-style="sculpt"] aside button,
+[data-style="sculpt"] nav button,
+[data-style="sculpt"] aside [role="button"],
+[data-style="sculpt"] nav [role="button"] {
+  border-radius: var(--radius-base, 6px) !important;
+  box-shadow: none !important;
+  border: 1px solid transparent !important;
+  transform: none !important;
+}
+[data-style="sculpt"] aside button:hover,
+[data-style="sculpt"] nav button:hover {
+  background: var(--bg-hover) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+[data-style="sculpt"] aside button:active,
+[data-style="sculpt"] nav button:active {
+  background: var(--bg-hover) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
 [data-style="sculpt"] .tracker-card,
 [data-style="sculpt"] [data-card] {
   border-radius: var(--radius-card) !important;
