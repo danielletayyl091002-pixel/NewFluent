@@ -44,6 +44,7 @@ function DroppableColumn({ id, children, style }: {
 
 export default function BoardView({ pageUid }: { pageUid: string }) {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [addingTo, setAddingTo] = useState<string | null>(null)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -57,13 +58,18 @@ export default function BoardView({ pageUid }: { pageUid: string }) {
   )
 
   useEffect(() => {
+    let cancelled = false
+    setLoading(true)
     async function load() {
       const t = pageUid === 'global'
         ? await db.tasks.toArray()
         : await db.tasks.where('pageUid').equals(pageUid).toArray()
+      if (cancelled) return
       setTasks(t)
+      setLoading(false)
     }
     load()
+    return () => { cancelled = true }
   }, [pageUid])
 
   async function addTask(status: string) {
@@ -136,6 +142,32 @@ export default function BoardView({ pageUid }: { pageUid: string }) {
       }
       pendingStatus.current = null
     }
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex', gap: '16px',
+        padding: '24px', height: '100%',
+        overflowX: 'auto', alignItems: 'flex-start'
+      }}>
+        {COLUMNS.map(col => (
+          <div key={col.id} style={{
+            minWidth: '280px', width: '280px',
+            minHeight: 'calc(100vh - 200px)',
+            background: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-card, 12px)',
+            padding: '16px', opacity: 0.5
+          }}>
+            <div style={{
+              fontSize: '12px', fontWeight: 600,
+              color: 'var(--text-tertiary)',
+              textTransform: 'uppercase', letterSpacing: '0.06em'
+            }}>{col.label}</div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (

@@ -15,12 +15,18 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
   const router = useRouter()
 
   useEffect(() => {
+    // Capture whatever was focused before this modal opened so we can
+    // restore focus on close (keyboard users were left on <body>).
+    const previouslyFocused = document.activeElement as HTMLElement | null
     inputRef.current?.focus()
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
+    return () => {
+      window.removeEventListener('keydown', handleKey)
+      previouslyFocused?.focus?.()
+    }
   }, [onClose])
 
   async function handleCreate() {

@@ -7,7 +7,13 @@ export function expandRecurring(tasks: Task[], startDate: Date, endDate: Date): 
   for (const task of tasks) {
     // Parse deleted-occurrence exceptions for this recurring task
     const exceptions: string[] = task.recurrenceException
-      ? (() => { try { return JSON.parse(task.recurrenceException!) } catch { return [] } })()
+      ? (() => {
+          try { return JSON.parse(task.recurrenceException!) }
+          catch (err) {
+            console.warn(`expandRecurring: malformed recurrenceException for task ${task.uid}`, err)
+            return []
+          }
+        })()
       : []
     if (task.recurrence && task.scheduledDate) {
       try {
