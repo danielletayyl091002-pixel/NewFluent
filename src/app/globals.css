@@ -469,28 +469,32 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
    Linear) all keep navigation rows flat — pill-shaped raised buttons
    inside a sidebar list look like UI bumps, not nav items. Override
    the global rule for any button or icon container inside aside/nav. */
-[data-style="sculpt"] aside button,
-[data-style="sculpt"] nav button,
+/* Specificity must match or beat `button:not([data-no-sculpt])` above
+   (which scores 0,2,1) — adding the same :not() and the aside/nav
+   element brings these to 0,2,2 so they win. */
+[data-style="sculpt"] aside button:not([data-no-sculpt]),
+[data-style="sculpt"] nav button:not([data-no-sculpt]),
 [data-style="sculpt"] aside [role="button"],
 [data-style="sculpt"] nav [role="button"] {
   border-radius: var(--radius-base, 6px) !important;
   box-shadow: none !important;
   border: 1px solid transparent !important;
   transform: none !important;
+  background: none !important;
 }
 /* Subtree opt-out: any element marked [data-flat] (and its descendants)
    stays flat regardless of sculpt mode. Use for toolbars, tab rows,
    emoji pickers, page-title bars — anywhere the design wants neutral
    surfaces, not raised buttons/inputs. */
 [data-style="sculpt"] [data-flat],
-[data-style="sculpt"] [data-flat] button,
+[data-style="sculpt"] [data-flat] button:not([data-no-sculpt]),
 [data-style="sculpt"] [data-flat] input,
 [data-style="sculpt"] [data-flat] textarea,
 [data-style="sculpt"] [data-flat] select {
   box-shadow: none !important;
   transform: none !important;
 }
-[data-style="sculpt"] [data-flat] button {
+[data-style="sculpt"] [data-flat] button:not([data-no-sculpt]) {
   border-radius: var(--radius-base, 6px) !important;
   border: 1px solid transparent !important;
 }
@@ -523,14 +527,14 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 .finance-shell { padding: 32px 40px; }
 @media (max-width: 768px) { .finance-shell { padding: 20px 16px; } }
 @media (max-width: 480px) { .finance-shell { padding: 16px 12px; } }
-[data-style="sculpt"] aside button:hover,
-[data-style="sculpt"] nav button:hover {
+[data-style="sculpt"] aside button:not([data-no-sculpt]):hover,
+[data-style="sculpt"] nav button:not([data-no-sculpt]):hover {
   background: var(--bg-hover) !important;
   box-shadow: none !important;
   transform: none !important;
 }
-[data-style="sculpt"] aside button:active,
-[data-style="sculpt"] nav button:active {
+[data-style="sculpt"] aside button:not([data-no-sculpt]):active,
+[data-style="sculpt"] nav button:not([data-no-sculpt]):active {
   background: var(--bg-hover) !important;
   box-shadow: none !important;
   transform: none !important;
