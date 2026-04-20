@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { db } from '@/db/schema'
 import { PALETTES, FONT_GROUPS, GOOGLE_FONTS_URL } from '@/lib/settings-constants'
+import { saveSetting } from '@/lib/settingsDb'
 
 
 export default function SettingsPage() {
@@ -193,10 +194,7 @@ export default function SettingsPage() {
                 onClick={() => {
                   setInterfaceStyle(style)
                   document.documentElement.setAttribute('data-style', style)
-                  db.settings.where('key').equals('interface_style').first().then(ex => {
-                    if (ex?.id) db.settings.update(ex.id, { value: style })
-                    else db.settings.add({ key: 'interface_style', value: style })
-                  })
+                  saveSetting('interface_style', style)
                 }}
                 style={{
                   flex: '1 1 0', padding: '24px', borderRadius: 'var(--radius-card, 14px)',
@@ -250,10 +248,7 @@ export default function SettingsPage() {
                 <div key={opt.key} style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => {
                   setRadiusStyle(opt.key)
                   document.documentElement.setAttribute('data-corners', opt.key)
-                  db.settings.where('key').equals('radius_style').first().then(ex => {
-                    if (ex?.id) db.settings.update(ex.id, { value: opt.key })
-                    else db.settings.add({ key: 'radius_style', value: opt.key })
-                  })
+                  saveSetting('radius_style', opt.key)
                 }}>
                   <div style={{
                     width: '48px', height: '32px', background: 'var(--accent)',
@@ -284,10 +279,7 @@ export default function SettingsPage() {
                   const widths = ['0px', '1px', '1px', '2px']
                   document.documentElement.style.setProperty('--border-color', `rgba(0,0,0,${opacities[v]})`)
                   document.documentElement.style.setProperty('--border-width', widths[v])
-                  db.settings.where('key').equals('border_strength').first().then(ex => {
-                    if (ex?.id) db.settings.update(ex.id, { value: String(v) })
-                    else db.settings.add({ key: 'border_strength', value: String(v) })
-                  })
+                  saveSetting('border_strength', String(v))
                 }}
                 style={{ flex: 1, accentColor: 'var(--accent)' }}
               />
@@ -313,10 +305,7 @@ export default function SettingsPage() {
                   const v = Number(e.target.value)
                   setShadowDepth(v)
                   document.documentElement.style.setProperty('--shadow-intensity', String(v / 100))
-                  db.settings.where('key').equals('shadow_depth').first().then(ex => {
-                    if (ex?.id) db.settings.update(ex.id, { value: String(v) })
-                    else db.settings.add({ key: 'shadow_depth', value: String(v) })
-                  })
+                  saveSetting('shadow_depth', String(v))
                 }}
                 style={{ flex: 1, accentColor: 'var(--accent)' }}
               />
@@ -345,10 +334,7 @@ export default function SettingsPage() {
                   onClick={() => {
                     setLayoutDensity(d.key)
                     document.documentElement.setAttribute('data-density', d.key)
-                    db.settings.where('key').equals('layout_density').first().then(ex => {
-                      if (ex?.id) db.settings.update(ex.id, { value: d.key })
-                      else db.settings.add({ key: 'layout_density', value: d.key })
-                    })
+                    saveSetting('layout_density', d.key)
                   }}
                   style={{
                     flex: 1, padding: '12px', borderRadius: 'var(--radius-base, 8px)',
@@ -440,10 +426,7 @@ export default function SettingsPage() {
                   onClick={() => {
                     setFontSize(opt.key)
                     document.documentElement.style.setProperty('font-size', opt.size)
-                    db.settings.where('key').equals('font_size').first().then(ex => {
-                      if (ex?.id) db.settings.update(ex.id, { value: opt.key })
-                      else db.settings.add({ key: 'font_size', value: opt.key })
-                    })
+                    saveSetting('font_size', opt.key)
                   }}
                   style={{
                     flex: 1, padding: '8px 4px', borderRadius: 'var(--radius-base, 8px)',
@@ -472,10 +455,7 @@ export default function SettingsPage() {
                   onClick={() => {
                     setCalEventStyle(opt.key)
                     document.documentElement.setAttribute('data-cal-style', opt.key)
-                    db.settings.where('key').equals('calendar_event_style').first().then(ex => {
-                      if (ex?.id) db.settings.update(ex.id, { value: opt.key })
-                      else db.settings.add({ key: 'calendar_event_style', value: opt.key })
-                    })
+                    saveSetting('calendar_event_style', opt.key)
                   }}
                   style={{
                     flex: 1, padding: '12px', borderRadius: 'var(--radius-base, 8px)',
@@ -541,14 +521,8 @@ export default function SettingsPage() {
                   document.documentElement.style.setProperty('--accent', hex)
                   document.documentElement.style.setProperty('--accent-light', light)
                   setCurrentPalette('Custom')
-                  db.settings.where('key').equals('palette_accent').first().then(ex => {
-                    if (ex?.id) db.settings.update(ex.id, { value: hex })
-                    else db.settings.add({ key: 'palette_accent', value: hex })
-                  })
-                  db.settings.where('key').equals('palette_accent_light').first().then(ex => {
-                    if (ex?.id) db.settings.update(ex.id, { value: light })
-                    else db.settings.add({ key: 'palette_accent_light', value: light })
-                  })
+                  saveSetting('palette_accent', hex)
+                  saveSetting('palette_accent_light', light)
                 }}
                 style={{
                   width: '36px', height: '36px',

@@ -273,8 +273,9 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         >
           <span style={{
             fontSize: '11px', color: 'var(--text-tertiary)',
-            width: '36px', paddingTop: '4px',
-            paddingLeft: '8px', flexShrink: 0
+            width: '52px', paddingTop: '4px',
+            paddingLeft: '8px', flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}>{formatHour(h)}</span>
         </div>
       ))}
@@ -283,7 +284,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         <div style={{
           position: 'absolute',
           top: `${(9 - START) * HOUR_H}px`,
-          left: '44px', right: '8px',
+          left: '60px', right: '8px',
           textAlign: 'center',
           fontSize: '11px',
           color: 'var(--text-tertiary)',
@@ -302,7 +303,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         return (
           <div style={{
             position: 'absolute', top: `${topPx}px`,
-            left: '44px', right: '8px', height: `${heightPx}px`,
+            left: '60px', right: '8px', height: `${heightPx}px`,
             background: `${color}30`, borderLeft: `3px dashed ${color}`,
             borderRadius: 'var(--radius-xs, 4px)', pointerEvents: 'none', zIndex: 8,
             padding: '3px 6px', fontSize: '11px', fontWeight: 600, color,
@@ -324,7 +325,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
           <div key={task.uid} data-rail-event={task.uid} className="calendar-event" style={{
             position: 'absolute',
             top: `${topPx}px`,
-            left: '44px', right: '8px',
+            left: '60px', right: '8px',
             height: `${heightPx}px`,
             ...getEventStyle(color),
             borderRadius: 'var(--radius-xs, 4px)',
@@ -371,7 +372,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         <div style={{
           position: 'absolute',
           top: `${(Math.min(dragStart, dragEnd) - START) * HOUR_H}px`,
-          left: '44px', right: '8px',
+          left: '60px', right: '8px',
           height: `${Math.abs(dragEnd - dragStart) * HOUR_H}px`,
           background: 'rgba(99,102,241,0.2)',
           borderLeft: '3px solid var(--accent)',
@@ -406,7 +407,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         <div style={{
           position: 'absolute',
           top: `${currentTop}px`,
-          left: '36px', right: '8px',
+          left: '60px', right: '8px',
           height: '2px', background: '#EF4444', zIndex: 10,
           pointerEvents: 'none'
         }}>
