@@ -99,13 +99,12 @@ export default function FinancePage() {
   const totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0)
 
   return (
-    <div style={{
+    <div className="finance-shell" style={{
       height: '100vh', overflowY: 'auto',
       background: 'var(--bg-secondary)',
       backgroundImage: 'var(--bg_finance, none)',
       backgroundSize: 'cover', backgroundPosition: 'center',
       backgroundAttachment: 'fixed',
-      padding: '32px 40px'
     }}>
 
       {/* HEADER */}

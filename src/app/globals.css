@@ -497,8 +497,32 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 [data-style="sculpt"] [data-flat] input,
 [data-style="sculpt"] [data-flat] textarea {
   border-radius: var(--radius-base, 6px) !important;
-  border: 1px solid var(--border) !important;
+  /* Don't force a border — inline component styles decide. The original
+     intent of data-flat is "stop adding sculpt chrome", not "add new chrome". */
+  border: none !important;
+  background: transparent !important;
 }
+
+/* ─── Responsive shells ───
+   Padding scales down on narrow viewports so headers, titles and
+   action rows aren't pushed offscreen on split-screen / tablet /
+   mobile widths. */
+.page-shell { padding: 80px 80px 0; }
+@media (max-width: 1024px) { .page-shell { padding: 56px 40px 0; } }
+@media (max-width: 768px)  { .page-shell { padding: 32px 20px 0; } }
+@media (max-width: 480px)  { .page-shell { padding: 20px 14px 0; } }
+
+/* Headers that pin sticky toolbars (trackers, finance) — same scale */
+.app-header { padding: 32px 40px 16px; }
+@media (max-width: 768px) { .app-header { padding: 20px 16px 12px; } }
+@media (max-width: 480px) { .app-header { padding: 16px 12px 8px; } }
+.app-content { padding: 8px 40px 120px; }
+@media (max-width: 768px) { .app-content { padding: 8px 16px 80px; } }
+@media (max-width: 480px) { .app-content { padding: 8px 12px 64px; } }
+
+.finance-shell { padding: 32px 40px; }
+@media (max-width: 768px) { .finance-shell { padding: 20px 16px; } }
+@media (max-width: 480px) { .finance-shell { padding: 16px 12px; } }
 [data-style="sculpt"] aside button:hover,
 [data-style="sculpt"] nav button:hover {
   background: var(--bg-hover) !important;

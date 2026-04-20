@@ -17,6 +17,21 @@ export function useSidebarVisibility() {
     load()
   }, [])
 
+  // Auto-collapse rails on narrow viewports so the main page never gets
+  // squeezed below a usable width. Below 1100px hide the right rail;
+  // below 768px hide both. Re-evaluate on resize.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const apply = () => {
+      const w = window.innerWidth
+      if (w < 768) { setLeftVisible(false); setRightVisible(false) }
+      else if (w < 1100) { setRightVisible(false) }
+    }
+    apply()
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
+  }, [])
+
   const toggleLeft = async () => {
     const newVal = !leftVisible
     setLeftVisible(newVal)

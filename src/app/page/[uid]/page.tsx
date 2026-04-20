@@ -110,7 +110,7 @@ export default function PageCanvas() {
 
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)' }}>
-      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '80px 80px 0' }}>
+      <div className="page-shell" style={{ maxWidth: '720px', margin: '0 auto' }}>
         {/* Page title — emoji + title in one bubble */}
         <div data-flat style={{ marginBottom: '16px', position: 'relative' }}>
           <div style={{
