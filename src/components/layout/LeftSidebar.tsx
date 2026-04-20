@@ -30,19 +30,27 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
+  // Mount-only: seed and load pages from Dexie. Refetching on every route
+  // change is wasteful — page mutations dispatch 'page-*' events which the
+  // listener below picks up.
   useEffect(() => {
     async function init() {
       await seedIfEmpty()
       const all = await db.pages.filter(p => !p.inTrash).sortBy('order')
       setPages(all)
       setLoading(false)
-      const homeSetting = await db.settings.where('key').equals('homePageUid').first()
-      if (pathname === '/' && homeSetting?.value) {
-        router.replace(`/page/${homeSetting.value}`)
-      }
     }
     init()
-  }, [pathname])
+  }, [])
+
+  // Home redirect: when the user lands on or navigates to '/', send them
+  // to their configured home page.
+  useEffect(() => {
+    if (pathname !== '/') return
+    db.settings.where('key').equals('homePageUid').first().then(s => {
+      if (s?.value) router.replace(`/page/${s.value}`)
+    })
+  }, [pathname, router])
 
   // Prop-driven refresh: when the parent bumps refreshKey (e.g. after
   // QuickCapture creates a page) re-read the page list from Dexie.

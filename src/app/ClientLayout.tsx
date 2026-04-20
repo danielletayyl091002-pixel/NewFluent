@@ -66,28 +66,42 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, [])
   useEffect(() => {
     async function loadSettings() {
-      const font = await db.settings.where('key').equals('font').first()
+      // Single read of all settings, then look up by key in memory.
+      // Previously this fired ~14 sequential Dexie queries.
+      const allSettings = await db.settings.toArray()
+      const settingsMap = new Map(allSettings.map(s => [s.key, s.value]))
+      const get = (k: string) => {
+        const v = settingsMap.get(k)
+        return v == null ? undefined : { value: v }
+      }
+      const font = get('font')
       if (font?.value && font.value !== 'System Default') {
-        // Load Google Fonts
+        // Defer font-link injection to next frame so we don't block the
+        // initial paint with synchronous DOM appends + an external stylesheet.
         if (!document.querySelector('link[data-fluent-fonts]')) {
-          if (!document.querySelector('link[href="https://fonts.googleapis.com"]')) {
-            const pc1 = document.createElement('link')
-            pc1.rel = 'preconnect'
-            pc1.href = 'https://fonts.googleapis.com'
-            document.head.appendChild(pc1)
-          }
-          if (!document.querySelector('link[href="https://fonts.gstatic.com"]')) {
-            const pc2 = document.createElement('link')
-            pc2.rel = 'preconnect'
-            pc2.href = 'https://fonts.gstatic.com'
-            pc2.crossOrigin = 'anonymous'
-            document.head.appendChild(pc2)
-          }
-          const link = document.createElement('link')
-          link.rel = 'stylesheet'
-          link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lexend:wght@400;500;600;700&family=Lato:wght@400;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Merriweather:wght@400;700&family=Lora:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&family=Fira+Code:wght@400;500;700&family=Source+Code+Pro:wght@400;600;700&display=swap'
-          link.setAttribute('data-fluent-fonts', 'true')
-          document.head.appendChild(link)
+          requestAnimationFrame(() => {
+            const head = document.head
+            const frag = document.createDocumentFragment()
+            if (!document.querySelector('link[href="https://fonts.googleapis.com"]')) {
+              const pc1 = document.createElement('link')
+              pc1.rel = 'preconnect'
+              pc1.href = 'https://fonts.googleapis.com'
+              frag.appendChild(pc1)
+            }
+            if (!document.querySelector('link[href="https://fonts.gstatic.com"]')) {
+              const pc2 = document.createElement('link')
+              pc2.rel = 'preconnect'
+              pc2.href = 'https://fonts.gstatic.com'
+              pc2.crossOrigin = 'anonymous'
+              frag.appendChild(pc2)
+            }
+            const link = document.createElement('link')
+            link.rel = 'stylesheet'
+            link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Lexend:wght@400;500;600;700&family=Lato:wght@400;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Merriweather:wght@400;700&family=Lora:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&family=Fira+Code:wght@400;500;700&family=Source+Code+Pro:wght@400;600;700&display=swap'
+            link.setAttribute('data-fluent-fonts', 'true')
+            frag.appendChild(link)
+            head.appendChild(frag)
+          })
         }
         const fontMap: Record<string, string> = {
           'Inter': '"Inter", sans-serif',
@@ -122,22 +136,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         }
       }
 
-      const palette = await db.settings.where('key').equals('palette').first()
+      const palette = get('palette')
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'
       if (palette?.value && palette.value !== 'Default') {
         // Re-apply palette vars on load — import the palette list dynamically would be heavy,
         // so we store just accent + accent-light in settings
-        const accentSetting = await db.settings.where('key').equals('palette_accent').first()
-        const accentLightSetting = await db.settings.where('key').equals('palette_accent_light').first()
+        const accentSetting = get('palette_accent')
+        const accentLightSetting = get('palette_accent_light')
         if (accentSetting?.value) document.documentElement.style.setProperty('--accent', accentSetting.value)
         if (accentLightSetting?.value) document.documentElement.style.setProperty('--accent-light', accentLightSetting.value)
 
         // Only apply palette bg overrides in light mode — in dark mode the
         // [data-theme="dark"] CSS rule must win, not the saved light-palette values
         if (currentTheme !== 'dark') {
-          const bgPrimary = await db.settings.where('key').equals('palette_bg_primary').first()
-          const bgSecondary = await db.settings.where('key').equals('palette_bg_secondary').first()
-          const bgSidebar = await db.settings.where('key').equals('palette_bg_sidebar').first()
+          const bgPrimary = get('palette_bg_primary')
+          const bgSecondary = get('palette_bg_secondary')
+          const bgSidebar = get('palette_bg_sidebar')
           if (bgPrimary?.value) document.documentElement.style.setProperty('--bg-primary', bgPrimary.value)
           if (bgSecondary?.value) document.documentElement.style.setProperty('--bg-secondary', bgSecondary.value)
           if (bgSidebar?.value) document.documentElement.style.setProperty('--bg-sidebar', bgSidebar.value)
@@ -146,53 +160,53 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       const bgKeys = ['bg_trackers', 'bg_finance', 'bg_board']
       for (const key of bgKeys) {
-        const setting = await db.settings.where('key').equals(key).first()
+        const setting = get(key)
         if (setting?.value) {
           document.documentElement.style.setProperty(`--${key}`, `url(${setting.value})`)
-          const opSetting = await db.settings.where('key').equals(`${key}_opacity`).first()
+          const opSetting = get(`${key}_opacity`)
           if (opSetting?.value) {
             document.documentElement.style.setProperty('--bg-overlay-opacity', String(Number(opSetting.value) / 100))
           }
         }
       }
       // Load interface style
-      const styleS = await db.settings.where('key').equals('interface_style').first()
+      const styleS = get('interface_style')
       if (styleS?.value) {
         document.documentElement.setAttribute('data-style', styleS.value)
       }
       // Load radius style
-      const radiusS = await db.settings.where('key').equals('radius_style').first()
+      const radiusS = get('radius_style')
       if (radiusS?.value) {
         document.documentElement.setAttribute('data-corners', radiusS.value)
       }
       // Load border strength
-      const borderS = await db.settings.where('key').equals('border_strength').first()
+      const borderS = get('border_strength')
       if (borderS?.value) {
         const v = Number(borderS.value)
         document.documentElement.style.setProperty('--border-opacity', String(v / 3))
         document.documentElement.style.setProperty('--border-width', v === 0 ? '0px' : v <= 1 ? '1px' : '2px')
       }
       // Load shadow depth
-      const shadowS = await db.settings.where('key').equals('shadow_depth').first()
+      const shadowS = get('shadow_depth')
       if (shadowS?.value) {
         document.documentElement.style.setProperty('--shadow-intensity', String(Number(shadowS.value) / 100))
       }
       // Load layout density
-      const densityS = await db.settings.where('key').equals('layout_density').first()
+      const densityS = get('layout_density')
       if (densityS?.value) {
         document.documentElement.setAttribute('data-density', densityS.value)
       }
       // Load font size
-      const fontSizeS = await db.settings.where('key').equals('font_size').first()
+      const fontSizeS = get('font_size')
       if (fontSizeS?.value) {
         const sizeMap: Record<string, string> = { xs: '12px', s: '13px', m: '14px', l: '16px', xl: '18px' }
         document.documentElement.style.setProperty('font-size', sizeMap[fontSizeS.value] || '14px')
       }
       // Load calendar event style
-      const calStyleS = await db.settings.where('key').equals('calendar_event_style').first()
+      const calStyleS = get('calendar_event_style')
       if (calStyleS?.value) document.documentElement.setAttribute('data-cal-style', calStyleS.value)
       // Load border strength
-      const borderS2 = await db.settings.where('key').equals('border_strength').first()
+      const borderS2 = get('border_strength')
       if (borderS2?.value) {
         const v = Number(borderS2.value)
         const opacities = [0, 0.10, 0.25, 0.45]

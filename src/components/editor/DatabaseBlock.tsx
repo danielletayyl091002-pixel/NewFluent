@@ -42,6 +42,16 @@ export default function DatabaseBlock({ databaseUid, pageUid }: DatabaseBlockPro
   const typePickerRef = useRef<HTMLDivElement>(null)
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
+  // Flush any pending cell-save timeouts on unmount so they don't fire after
+  // the component is gone (which would leak memory + warn about state writes
+  // on an unmounted component).
+  useEffect(() => {
+    const timers = saveTimers.current
+    return () => {
+      for (const k in timers) clearTimeout(timers[k])
+    }
+  }, [])
+
   // Close type picker on outside click
   useEffect(() => {
     if (!typePickerCol) return

@@ -10,7 +10,8 @@
       "Bash(npm run *)",
       "Bash(gh auth *)",
       "Bash(git --version)",
-      "Bash(winget install *)"
+      "Bash(winget install *)",
+      "Bash(grep -n \"db.settings.where\\\\|get\\(key\\)\\\\|get\\(\\\\`\" src/app/ClientLayout.tsx)"
     ]
   }
 }
