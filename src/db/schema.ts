@@ -329,7 +329,10 @@ export async function seedIfEmpty() {
     { uid: nanoid(), name: 'Sleep', icon: '😴', unit: 'hours', target: 8, color: '#8B5CF6', type: 'value', options: null, notes: null, order: 1, createdAt: new Date().toISOString() },
     { uid: nanoid(), name: 'Exercise', icon: '🏃', unit: 'min', target: 30, color: '#EF4444', type: 'value', options: null, notes: null, order: 2, createdAt: new Date().toISOString() },
     { uid: nanoid(), name: 'Reading', icon: '📖', unit: 'pages', target: 20, color: '#A855F7', type: 'value', options: null, notes: null, order: 3, createdAt: new Date().toISOString() },
-    { uid: nanoid(), name: 'Mood', icon: '😊', unit: '', target: 5, color: '#EC4899', type: 'select', options: JSON.stringify(['😢', '😕', '😐', '🙂', '😊']), notes: null, order: 4, createdAt: new Date().toISOString() },
+    // Mood is a `select` tracker — there is no target to "hit". target=0
+    // disables completion / streak chrome elsewhere in the UI. Options
+    // map 1..5 from worst to best so the dot row colors gradient red→green.
+    { uid: nanoid(), name: 'Mood', icon: '😊', unit: '', target: 0, color: '#EC4899', type: 'select', options: JSON.stringify(['😢', '😕', '😐', '🙂', '😊']), notes: null, order: 4, createdAt: new Date().toISOString() },
     { uid: nanoid(), name: 'Meditation', icon: '🧘', unit: 'min', target: 15, color: '#14B8A6', type: 'value', options: null, notes: null, order: 5, createdAt: new Date().toISOString() },
     { uid: nanoid(), name: 'Steps', icon: '👟', unit: 'steps', target: 10000, color: '#F59E0B', type: 'value', options: null, notes: null, order: 6, createdAt: new Date().toISOString() },
     { uid: nanoid(), name: 'Journaling', icon: '📝', unit: '', target: 1, color: '#6366F1', type: 'habit', options: null, notes: null, order: 7, createdAt: new Date().toISOString() },

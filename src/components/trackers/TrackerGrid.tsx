@@ -469,7 +469,10 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
               </span>
             ) : null
           })()}
-          {isComplete && <CheckCircle size={14} color={tracker.color} />}
+          {/* Mood/select trackers don't have a "target" — never show the
+              completion checkmark, which would otherwise gamify the
+              highest mood option. */}
+          {isComplete && tracker.type !== 'select' && <CheckCircle size={14} color={tracker.color} />}
           {hovered && (
             <button
               onClick={e => { e.stopPropagation(); onEdit() }}

@@ -126,7 +126,18 @@ export default function TrackerLogModal({ tracker, currentValue, onLog, onClose 
               {tracker.name}
             </div>
             <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
-              Today: {currentValue}{tracker.unit ? ` ${tracker.unit}` : ''} / {tracker.target}{tracker.unit ? ` ${tracker.unit}` : ''}
+              {tracker.type === 'select' && tracker.options ? (
+                // Mood/select trackers don't have a "target" — show today's
+                // logged option (or a prompt if not logged yet) instead of
+                // an X/Y goal display that frames mood as something to maximize.
+                (() => {
+                  const opts: string[] = JSON.parse(tracker.options)
+                  const logged = currentValue > 0 ? opts[currentValue - 1] : null
+                  return logged ? `Today: ${logged}` : 'Not logged yet today'
+                })()
+              ) : (
+                <>Today: {currentValue}{tracker.unit ? ` ${tracker.unit}` : ''} / {tracker.target}{tracker.unit ? ` ${tracker.unit}` : ''}</>
+              )}
             </div>
           </div>
         </div>
