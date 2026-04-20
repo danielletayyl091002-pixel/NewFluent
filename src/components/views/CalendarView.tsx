@@ -206,6 +206,22 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
   const todayStr = new Date().toISOString().split('T')[0]
   const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+  // Keyboard create — press 'n' to open a 9-10am event on today (or first
+  // visible day if today isn't in the current week). Ignored while typing.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'n' || e.metaKey || e.ctrlKey || e.altKey) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      e.preventDefault()
+      const inWeek = weekDays.some(d => d.toISOString().split('T')[0] === todayStr)
+      const dateStr = inWeek ? todayStr : weekDays[0].toISOString().split('T')[0]
+      setModalDefaults({ date: dateStr, start: '09:00', end: '10:00' })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [weekDays, todayStr])
+
   // Get column index and hour from mouse event on the grid
   function getColAndHour(e: React.MouseEvent | MouseEvent): {
     dateStr: string; hour: number
@@ -995,6 +1011,22 @@ export default function CalendarView({
   const dayGridRef = useRef<HTMLDivElement>(null)
   const tasksRef = useRef<Task[]>([])
   useEffect(() => { tasksRef.current = tasks }, [tasks])
+
+  // Keyboard: press 'n' on the day view to open a "create event" modal at 9am
+  // for the current day. Ignored when typing in inputs/textareas/contenteditable.
+  useEffect(() => {
+    if (viewMode !== 'day') return
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'n' || e.metaKey || e.ctrlKey || e.altKey) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      e.preventDefault()
+      const dateStr = currentDate.toISOString().split('T')[0]
+      setDayModalDefaults({ date: dateStr, start: '09:00', end: '10:00' })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [viewMode, currentDate])
 
   // Day view helpers
   function dayYToHour(clientY: number): number | null {

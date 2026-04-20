@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { db, Page, seedIfEmpty } from '@/db/schema'
-import { nanoid } from 'nanoid'
 import { safeDbWrite } from '@/lib/dbError'
+import { usePagesStore } from '@/stores/pages'
 
 interface LeftSidebarProps {
   collapsed: boolean
@@ -23,25 +23,28 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
     router.push(path)
     onNavigate?.()
   }
-  const [pages, setPages] = useState<Page[]>([])
+  const pages = usePagesStore(s => s.pages)
+  const loadPagesStore = usePagesStore(s => s.load)
+  const refreshPages = usePagesStore(s => s.refresh)
+  const createPageInStore = usePagesStore(s => s.createPage)
+  const deletePageInStore = usePagesStore(s => s.deletePage)
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
-  // Mount-only: seed and load pages from Dexie. Refetching on every route
-  // change is wasteful — page mutations dispatch 'page-*' events which the
-  // listener below picks up.
+  // Mount-only: seed and load pages into the store. The store is the
+  // single source of truth — mutations from CmdK / QuickCapture / etc.
+  // update it directly so the sidebar re-renders without re-fetching.
   useEffect(() => {
     async function init() {
       await seedIfEmpty()
-      const all = await db.pages.filter(p => !p.inTrash).sortBy('order')
-      setPages(all)
+      await loadPagesStore()
       setLoading(false)
     }
     init()
-  }, [])
+  }, [loadPagesStore])
 
   // Home redirect: when the user lands on or navigates to '/', send them
   // to their configured home page.
@@ -52,57 +55,35 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
     })
   }, [pathname, router])
 
-  // Prop-driven refresh: when the parent bumps refreshKey (e.g. after
-  // QuickCapture creates a page) re-read the page list from Dexie.
+  // Prop-driven refresh kept for legacy callers that may bump refreshKey.
   useEffect(() => {
     if (refreshKey === 0) return
-    async function reload() {
-      const all = await db.pages.filter(p => !p.inTrash).sortBy('order')
-      setPages(all)
-    }
-    reload()
-  }, [refreshKey])
+    refreshPages()
+  }, [refreshKey, refreshPages])
 
+  // Page edits in the editor still dispatch these events; relay to the store.
   useEffect(() => {
-    async function refresh() {
-      const all = await db.pages.filter(p => !p.inTrash).sortBy('order')
-      setPages(all)
-    }
-    window.addEventListener('page-title-updated', refresh)
-    window.addEventListener('page-created', refresh)
+    window.addEventListener('page-title-updated', refreshPages)
+    window.addEventListener('page-created', refreshPages)
     return () => {
-      window.removeEventListener('page-title-updated', refresh)
-      window.removeEventListener('page-created', refresh)
+      window.removeEventListener('page-title-updated', refreshPages)
+      window.removeEventListener('page-created', refreshPages)
     }
-  }, [])
+  }, [refreshPages])
 
   let creating = false
   async function createPage(parentUid: string | null = null) {
     if (creating) return
     creating = true
-    const uid = nanoid()
-    const count = await db.pages.count()
-    await safeDbWrite(
-      () => db.pages.add({
-        uid,
-        title: 'Untitled',
-        icon: null,
-        parentUid,
-        isFavorite: false,
-        inTrash: false,
-        order: count,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }),
-      'Failed to save page. Please try again.'
-    )
-    const all = await db.pages.filter(p => !p.inTrash).sortBy('order')
-    setPages([...all])
-    if (parentUid) {
-      setExpanded(prev => new Set([...prev, parentUid]))
+    try {
+      const page = await createPageInStore({ parentUid })
+      if (parentUid) {
+        setExpanded(prev => new Set([...prev, parentUid]))
+      }
+      navigateTo(`/page/${page.uid}`)
+    } finally {
+      creating = false
     }
-    navigateTo(`/page/${uid}`)
-    creating = false
   }
 
   function toggleExpanded(uid: string) {
@@ -141,12 +122,10 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
           onClick={() => navigateTo(`/page/${page.uid}`)}
           onAddChild={() => createPage(page.uid)}
           onDelete={async () => {
-            if (!page.id) return
             await safeDbWrite(
-              () => db.pages.update(page.id!, { inTrash: true }),
+              () => deletePageInStore(page.uid),
               'Failed to delete page. Please try again.'
             )
-            window.dispatchEvent(new CustomEvent('page-created'))
           }}
         />
         {hasChildren && isExpanded && (

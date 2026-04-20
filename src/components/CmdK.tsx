@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { db, Page, Block } from '@/db/schema'
 import { nanoid } from 'nanoid'
 import { TEMPLATES } from '@/lib/templates'
+import { usePagesStore } from '@/stores/pages'
 
 interface CmdKProps {
   onPageCreated?: () => void
@@ -18,6 +19,8 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const inputRef = useRef<HTMLInputElement>(null)
   const creatingRef = useRef(false)
+  const createPageInStore = usePagesStore(s => s.createPage)
+  const refreshPagesStore = usePagesStore(s => s.refresh)
 
   const quickActions = [
     { label: 'New Page', action: 'new-page', group: 'Actions' },
@@ -40,17 +43,13 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
     if (action === 'new-page') {
       if (creatingRef.current) return
       creatingRef.current = true
-      const uid = nanoid()
-      const count = await db.pages.count()
-      await db.pages.add({
-        uid, title: 'Untitled', icon: null, parentUid: null,
-        isFavorite: false, inTrash: false, order: count,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      })
-      onPageCreated?.()
-      router.push(`/page/${uid}`)
-      creatingRef.current = false
+      try {
+        const page = await createPageInStore()
+        onPageCreated?.()
+        router.push(`/page/${page.uid}`)
+      } finally {
+        creatingRef.current = false
+      }
     } else if (action === 'toggle-theme') {
       const prev = theme
       const next = theme === 'light' ? 'dark' : 'light'
@@ -76,12 +75,6 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
       const uid = nanoid()
       try {
         await db.transaction('rw', db.pages, db.blocks, async () => {
-          const count = await db.pages.count()
-          await db.pages.add({
-            uid, title: template.name, icon: null, parentUid: null,
-            isFavorite: false, inTrash: false, order: count,
-            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-          })
           const blocksToAdd: Block[] = template.blocks.map((b, i) => ({
             uid: nanoid(), pageUid: uid, type: b.type as Block['type'],
             content: b.content, checked: false, order: i,
@@ -89,9 +82,12 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
           }))
           await db.blocks.bulkAdd(blocksToAdd)
         })
+        // createPageInStore handles the page row + store update
+        await createPageInStore({ uid, title: template.name })
       } catch (err) {
         console.error('CmdK: failed to create from template', err)
         alert('Could not create page from template. Please try again.')
+        await refreshPagesStore()
         return
       }
       onPageCreated?.()

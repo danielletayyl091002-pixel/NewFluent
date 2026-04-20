@@ -1,8 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { db } from '@/db/schema'
-import { nanoid } from 'nanoid'
+import { usePagesStore } from '@/stores/pages'
 
 interface Props {
   onClose: () => void
@@ -13,6 +12,7 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
   const [title, setTitle] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const createPage = usePagesStore(s => s.createPage)
 
   useEffect(() => {
     // Capture whatever was focused before this modal opened so we can
@@ -31,20 +31,9 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
 
   async function handleCreate() {
     if (!title.trim()) return
-    const uid = nanoid()
+    let page
     try {
-      const count = await db.pages.count()
-      await db.pages.add({
-        uid,
-        title: title.trim(),
-        icon: null,
-        parentUid: null,
-        isFavorite: false,
-        inTrash: false,
-        order: count,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
+      page = await createPage({ title: title.trim() })
     } catch (err) {
       console.error('QuickCapture: failed to create page', err)
       alert('Could not create page. Please try again.')
@@ -52,7 +41,7 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
     }
     onCreated?.()
     onClose()
-    router.push(`/page/${uid}`)
+    router.push(`/page/${page.uid}`)
   }
 
   return (
