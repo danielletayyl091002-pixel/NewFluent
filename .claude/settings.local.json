@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -l \"C:/Users/LENOVO/Downloads/productivity-claude-productivity-app-trackers-usbRA.zip\")",
+      "Bash(unzip -q \"C:/Users/LENOVO/Downloads/productivity-claude-productivity-app-trackers-usbRA.zip\" -d /tmp/extract)",
+      "Read(//tmp/**)",
+      "Bash(cp -r /tmp/extract/productivity-claude-productivity-app-trackers-usbRA/. .)",
+      "Bash(find \"C:\\\\Users\\\\LENOVO\\\\Vercel Productivity App\\\\src\" -name \"CalendarView.tsx\" -exec wc -l {} \\\\;)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(gh auth *)",
+      "Bash(git --version)",
+      "Bash(winget install *)"
+    ]
+  }
+}
