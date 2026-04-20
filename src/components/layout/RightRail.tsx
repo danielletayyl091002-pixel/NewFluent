@@ -650,7 +650,7 @@ export default function RightRail({ toggleRight }: RightRailProps = {}) {
           }}>
             <span style={{ fontSize: '12px', fontWeight: 600,
               color: 'var(--text-primary)' }}>
-              Add at {newEvent.startTime} → {newEvent.endTime}
+              Add at {formatTimeString(newEvent.startTime)} → {formatTimeString(newEvent.endTime)}
             </span>
             <button onClick={() => setNewEvent(null)} style={{
               background: 'none', border: 'none',
