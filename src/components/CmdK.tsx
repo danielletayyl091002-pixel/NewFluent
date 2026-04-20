@@ -52,11 +52,19 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
       router.push(`/page/${uid}`)
       creatingRef.current = false
     } else if (action === 'toggle-theme') {
+      const prev = theme
       const next = theme === 'light' ? 'dark' : 'light'
       setTheme(next)
       localStorage.setItem('theme', next)
       document.documentElement.setAttribute('data-theme', next)
-      db.settings.where('key').equals('theme').modify({ value: next })
+      try {
+        await db.settings.where('key').equals('theme').modify({ value: next })
+      } catch (err) {
+        console.error('CmdK: failed to persist theme, reverting', err)
+        setTheme(prev)
+        localStorage.setItem('theme', prev)
+        document.documentElement.setAttribute('data-theme', prev)
+      }
     } else if (action === 'finance') {
       router.push('/finance')
     } else if (action === 'board') {
@@ -66,18 +74,26 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
       const template = TEMPLATES.find(t => t.name === templateName)
       if (!template) return
       const uid = nanoid()
-      const count = await db.pages.count()
-      await db.pages.add({
-        uid, title: template.name, icon: null, parentUid: null,
-        isFavorite: false, inTrash: false, order: count,
-        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-      })
-      const blocksToAdd: Block[] = template.blocks.map((b, i) => ({
-        uid: nanoid(), pageUid: uid, type: b.type as Block['type'],
-        content: b.content, checked: false, order: i,
-        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-      }))
-      await db.blocks.bulkAdd(blocksToAdd)
+      try {
+        await db.transaction('rw', db.pages, db.blocks, async () => {
+          const count = await db.pages.count()
+          await db.pages.add({
+            uid, title: template.name, icon: null, parentUid: null,
+            isFavorite: false, inTrash: false, order: count,
+            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+          })
+          const blocksToAdd: Block[] = template.blocks.map((b, i) => ({
+            uid: nanoid(), pageUid: uid, type: b.type as Block['type'],
+            content: b.content, checked: false, order: i,
+            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+          }))
+          await db.blocks.bulkAdd(blocksToAdd)
+        })
+      } catch (err) {
+        console.error('CmdK: failed to create from template', err)
+        alert('Could not create page from template. Please try again.')
+        return
+      }
       onPageCreated?.()
       router.push(`/page/${uid}`)
     }

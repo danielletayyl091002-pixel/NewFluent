@@ -25,19 +25,25 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
 
   async function handleCreate() {
     if (!title.trim()) return
-    const count = await db.pages.count()
     const uid = nanoid()
-    await db.pages.add({
-      uid,
-      title: title.trim(),
-      icon: null,
-      parentUid: null,
-      isFavorite: false,
-      inTrash: false,
-      order: count,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
+    try {
+      const count = await db.pages.count()
+      await db.pages.add({
+        uid,
+        title: title.trim(),
+        icon: null,
+        parentUid: null,
+        isFavorite: false,
+        inTrash: false,
+        order: count,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+    } catch (err) {
+      console.error('QuickCapture: failed to create page', err)
+      alert('Could not create page. Please try again.')
+      return
+    }
     onCreated?.()
     onClose()
     router.push(`/page/${uid}`)

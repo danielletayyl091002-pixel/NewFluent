@@ -294,6 +294,12 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
       // `tasks` array only contains the master records.
       const task = expandedTasks.find(t => t.uid === uid)
       if (!task) return
+      // Virtual recurring occurrences have no DB id — drag/resize would silently
+      // no-op (where('uid') won't match "master_YYYY-MM-DD"). Route to edit instead.
+      if (!task.id) {
+        setEditingEvent(task)
+        return
+      }
       const startMin = toMinutes(task.startTime!)
       const endMin = toMinutes(task.endTime!)
       moveDuration.current = (endMin - startMin) / 60
@@ -407,6 +413,7 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
   function handleResizeStart(e: React.MouseEvent, task: Task) {
     e.preventDefault()
     e.stopPropagation()
+    if (!task.id) return // Virtual recurring occurrence — can't resize
     setResizingTask(task)
     setResizeEndHour(toMinutes(task.endTime!) / 60)
   }
@@ -1019,6 +1026,10 @@ export default function CalendarView({
       const task = expandedMonthTasks.find(t => t.uid === uid)
         ?? tasksRef.current.find(t => t.uid === uid)
       if (!task || !task.startTime || !task.endTime) return
+      if (!task.id) {
+        setDayEditingEvent(task)
+        return
+      }
       const dur = (dayToMins(task.endTime) - dayToMins(task.startTime)) / 60
       dayMoveDuration.current = dur
       dayMoveStartPos.current = { x: e.clientX, y: e.clientY }
@@ -1144,6 +1155,7 @@ export default function CalendarView({
   function startDayResize(e: React.MouseEvent, task: Task) {
     e.preventDefault()
     e.stopPropagation()
+    if (!task.id) return // Virtual recurring occurrence — can't resize
     dayResizingRef.current = task
     setDayResizingTask(task)
     setDayResizeEndHour(dayToMins(task.endTime!) / 60)
