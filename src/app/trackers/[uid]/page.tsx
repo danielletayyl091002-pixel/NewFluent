@@ -432,6 +432,52 @@ export default function TrackerDetailPage() {
                       >
                         {val > 0 ? 'Done' : 'Mark done'}
                       </button>
+                    ) : tracker.type === 'select' && tracker.options ? (
+                      // Mood / select trackers: emoji picker, not a number
+                      // input. Click an option to log; click the same option
+                      // again to clear. Mirrors the log modal pattern.
+                      (() => {
+                        const opts: string[] = JSON.parse(tracker.options)
+                        return (
+                          <div data-flat style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            {opts.map((opt, i) => {
+                              const optVal = i + 1
+                              const selected = val === optVal
+                              return (
+                                <button
+                                  key={i}
+                                  onClick={async () => {
+                                    const existingLogs = logs.filter(l => l.trackerUid === uid && l.date === dateStr)
+                                    for (const log of existingLogs) {
+                                      if (log.id) await db.trackerLogs.delete(log.id)
+                                    }
+                                    if (!selected) {
+                                      await db.trackerLogs.add({
+                                        trackerUid: uid, value: optVal, note: logNotes[dateStr] || '',
+                                        date: dateStr, startTime: null, endTime: null,
+                                        createdAt: new Date().toISOString()
+                                      })
+                                    }
+                                    const allLogs = await db.trackerLogs.where('trackerUid').equals(uid).toArray()
+                                    setLogs(allLogs)
+                                  }}
+                                  style={{
+                                    width: '32px', height: '32px', fontSize: '18px',
+                                    border: selected ? `2px solid ${color}` : '1px solid var(--border)',
+                                    background: selected ? `${color}18` : 'var(--bg-secondary)',
+                                    borderRadius: '8px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    transition: 'transform 0.1s, border-color 0.1s',
+                                    padding: 0,
+                                  }}
+                                  onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.1)')}
+                                  onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                                >{opt}</button>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <input
