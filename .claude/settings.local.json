@@ -11,7 +11,8 @@
       "Bash(gh auth *)",
       "Bash(git --version)",
       "Bash(winget install *)",
-      "Bash(grep -n \"db.settings.where\\\\|get\\(key\\)\\\\|get\\(\\\\`\" src/app/ClientLayout.tsx)"
+      "Bash(grep -n \"db.settings.where\\\\|get\\(key\\)\\\\|get\\(\\\\`\" src/app/ClientLayout.tsx)",
+      "Bash(grep -n \"^export default function\\\\|^const GOOGLE_FONTS_URL\\\\|^const _UNUSED\\\\|^const FONT_GROUPS\\\\|^]\\\\$\" src/app/settings/page.tsx)"
     ]
   }
 }
