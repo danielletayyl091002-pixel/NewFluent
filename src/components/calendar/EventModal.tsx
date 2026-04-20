@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { nanoid } from 'nanoid'
-import { db, Task, Page } from '@/db/schema'
+import { db, Task } from '@/db/schema'
 import { safeDbWrite } from '@/lib/dbError'
+import LinkedPageChip from './LinkedPageChip'
+import LinkedPagePicker from './LinkedPagePicker'
 
 const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6']
 const REMINDERS = [
@@ -33,62 +33,6 @@ interface EventModalProps {
   onDeleted?: () => void
 }
 
-// Chip that loads and displays a linked page by uid. Clicking the title
-// navigates to the page; clicking × calls onRemove (which clears the
-// local linkedPageUid state in the parent).
-function LinkedPageChip({
-  uid,
-  onRemove,
-}: {
-  uid: string
-  onRemove: () => void
-}) {
-  const [page, setPage] = useState<Page | null>(null)
-  const router = useRouter()
-
-  useEffect(() => {
-    db.pages.where('uid').equals(uid).first().then(p => setPage(p ?? null))
-  }, [uid])
-
-  if (!page) return null
-
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      padding: '4px 10px',
-      background: 'var(--bg-secondary)',
-      border: '1px solid var(--border)',
-      borderRadius: '6px',
-      fontSize: '12px',
-      color: 'var(--text-primary)',
-    }}>
-      <span
-        onClick={() => router.push(`/page/${uid}`)}
-        style={{ cursor: 'pointer', flex: 1 }}
-      >
-        {page.icon ? `${page.icon} ` : ''}{page.title || 'Untitled'}
-      </span>
-      <button
-        onClick={onRemove}
-        aria-label="Remove linked page"
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--text-tertiary)',
-          fontSize: '14px',
-          lineHeight: 1,
-          padding: 0,
-        }}
-      >
-        {'\u00d7'}
-      </button>
-    </div>
-  )
-}
-
 export default function EventModal({
   initialEvent, defaultDate, defaultStartTime, defaultEndTime,
   onClose, onSave, onDelete, onDeleted,
@@ -114,19 +58,8 @@ export default function EventModal({
   // Linked page state
   const [linkedPageUid, setLinkedPageUid] = useState<string | null>(initialEvent?.linkedPageUid ?? null)
   const [showPagePicker, setShowPagePicker] = useState(false)
-  const [allPages, setAllPages] = useState<Page[]>([])
-  const [pageSearch, setPageSearch] = useState('')
-  const [hoveredPageUid, setHoveredPageUid] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
-
-  async function openPagePicker() {
-    const pages = await db.pages
-      .filter(p => !p.inTrash)
-      .toArray()
-    setAllPages(pages)
-    setShowPagePicker(true)
-  }
 
   // Resolve the real master task for this event. For virtual recurring
   // occurrences from CalendarView, initialEvent.id is undefined and the
@@ -434,7 +367,7 @@ export default function EventModal({
             />
           ) : (
             <button
-              onClick={openPagePicker}
+              onClick={() => setShowPagePicker(true)}
               style={{
                 fontSize: '12px',
                 color: 'var(--text-tertiary)',
@@ -556,122 +489,10 @@ export default function EventModal({
       )}
 
       {showPagePicker && (
-        <div
-          onClick={(e) => { e.stopPropagation(); setShowPagePicker(false) }}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 6000,
-            background: 'rgba(0,0,0,0.3)',
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              width: '360px',
-              maxHeight: '400px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
-            }}
-          >
-            <input
-              autoFocus
-              value={pageSearch}
-              onChange={(e) => setPageSearch(e.target.value)}
-              placeholder="Search pages..."
-              style={{
-                padding: '12px 16px',
-                fontSize: '14px',
-                border: 'none',
-                borderBottom: '1px solid var(--border)',
-                background: 'transparent',
-                color: 'var(--text-primary)',
-                outline: 'none',
-              }}
-            />
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {allPages
-                .filter(p =>
-                  (p.title || '').toLowerCase()
-                    .includes(pageSearch.toLowerCase())
-                )
-                .slice(0, 20)
-                .map(p => (
-                  <div
-                    key={p.uid}
-                    onClick={() => {
-                      setLinkedPageUid(p.uid)
-                      setShowPagePicker(false)
-                      setPageSearch('')
-                      setHoveredPageUid(null)
-                      markDirty()
-                    }}
-                    onMouseEnter={() => setHoveredPageUid(p.uid)}
-                    onMouseLeave={() => setHoveredPageUid(null)}
-                    style={{
-                      padding: '10px 16px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      color: 'var(--text-primary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      background: hoveredPageUid === p.uid ? 'var(--bg-secondary)' : 'transparent',
-                    }}
-                  >
-                    {p.icon && <span>{p.icon}</span>}
-                    <span>{p.title || 'Untitled'}</span>
-                  </div>
-                ))
-              }
-              <div
-                onClick={async () => {
-                  const newUid = nanoid()
-                  const count = await db.pages.count()
-                  await safeDbWrite(
-                    () => db.pages.add({
-                      uid: newUid,
-                      title: 'Untitled',
-                      icon: null,
-                      parentUid: null,
-                      isFavorite: false,
-                      inTrash: false,
-                      order: count,
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                    }),
-                    'Failed to save page. Please try again.'
-                  )
-                  setLinkedPageUid(newUid)
-                  setShowPagePicker(false)
-                  setPageSearch('')
-                  setHoveredPageUid(null)
-                  markDirty()
-                }}
-                onMouseEnter={() => setHoveredPageUid('__create__')}
-                onMouseLeave={() => setHoveredPageUid(null)}
-                style={{
-                  padding: '10px 16px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  color: 'var(--accent)',
-                  borderTop: '0.5px solid var(--border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: hoveredPageUid === '__create__' ? 'var(--bg-secondary)' : 'transparent',
-                }}
-              >
-                + Create new page
-              </div>
-            </div>
-          </div>
-        </div>
+        <LinkedPagePicker
+          onSelect={(uid) => { setLinkedPageUid(uid); markDirty() }}
+          onClose={() => setShowPagePicker(false)}
+        />
       )}
     </div>
   )

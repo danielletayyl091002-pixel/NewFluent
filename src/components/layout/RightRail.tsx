@@ -27,9 +27,11 @@ function getEventStyle(color: string): React.CSSProperties {
 import { useTrackerStore } from '@/stores/trackers'
 
 
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 6)
+// Full 24h timetable: 12 AM (0) through 11 PM (23).
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 function formatHour(h: number) {
+  if (h === 0) return '12 AM'
   if (h === 12) return '12 PM'
   if (h > 12) return `${h - 12} PM`
   return `${h} AM`

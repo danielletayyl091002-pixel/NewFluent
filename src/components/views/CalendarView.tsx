@@ -988,7 +988,7 @@ export default function CalendarView({
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [tasks, setTasks] = useState<Task[]>([])
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day' | 'agenda'>('month')
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day' | 'agenda'>('week')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showAddTask, setShowAddTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')

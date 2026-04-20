@@ -1,14 +1,7 @@
 'use client'
 export default function Home() {
   return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'var(--text-tertiary)',
-      fontSize: '14px'
-    }}>
+    <div className="flex flex-1 items-center justify-center text-sm text-[var(--text-tertiary)]">
       Select a page from the sidebar
     </div>
   )
