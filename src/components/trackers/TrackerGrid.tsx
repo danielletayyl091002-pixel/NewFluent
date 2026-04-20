@@ -650,19 +650,54 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
             </button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', height: '28px', marginBottom: '3px' }}>
-          {offsetWeekData.map((v, i) => (
-            <div key={i} style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-              <div style={{
-                width: '100%', borderRadius: '2px',
-                background: v > 0 ? tracker.color : 'var(--bg-hover)',
-                opacity: v > 0 ? 0.4 + Math.min(v / maxVal, 1) * 0.6 : 0.25,
-                height: `${Math.max(v > 0 ? Math.min(v / maxVal, 1) * 100 : 8, 8)}%`,
-                minHeight: '2px', transition: 'height 0.2s'
-              }} />
-            </div>
-          ))}
-        </div>
+        {tracker.type === 'select' ? (
+          // Mood-style ordinal scale: each day is a dot whose color reflects
+          // the value (red→green). Bars don't make sense here — a "low" mood
+          // is not a smaller quantity, it's a different category.
+          // Pattern adapted from Daylio / Apple's State of Mind.
+          (() => {
+            const opts: string[] = tracker.options ? JSON.parse(tracker.options) : []
+            const optCount = Math.max(opts.length, 1)
+            const moodPalette = ['#EF4444', '#F97316', '#EAB308', '#84CC16', '#22C55E']
+            const colorFor = (v: number) => {
+              if (v <= 0) return 'var(--bg-hover)'
+              if (optCount === 5) return moodPalette[v - 1] || tracker.color
+              const idx = Math.min(moodPalette.length - 1,
+                Math.floor((v - 1) / Math.max(1, optCount - 1) * (moodPalette.length - 1)))
+              return moodPalette[idx]
+            }
+            return (
+              <div style={{ display: 'flex', gap: '3px', alignItems: 'center', justifyContent: 'space-between', height: '28px', marginBottom: '3px', padding: '0 2px' }}>
+                {offsetWeekData.map((v, i) => (
+                  <div key={i} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <div title={v > 0 && opts[v - 1] ? `${weekDates[i].toLocaleDateString()}: ${opts[v - 1]}` : 'No log'}
+                      style={{
+                        width: '14px', height: '14px', borderRadius: '50%',
+                        background: colorFor(v),
+                        border: v > 0 ? 'none' : '1.5px dashed var(--border)',
+                        opacity: v > 0 ? 1 : 0.6,
+                        transition: 'background 0.2s',
+                      }} />
+                  </div>
+                ))}
+              </div>
+            )
+          })()
+        ) : (
+          <div style={{ display: 'flex', gap: '3px', alignItems: 'flex-end', height: '28px', marginBottom: '3px' }}>
+            {offsetWeekData.map((v, i) => (
+              <div key={i} style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                <div style={{
+                  width: '100%', borderRadius: '2px',
+                  background: v > 0 ? tracker.color : 'var(--bg-hover)',
+                  opacity: v > 0 ? 0.4 + Math.min(v / maxVal, 1) * 0.6 : 0.25,
+                  height: `${Math.max(v > 0 ? Math.min(v / maxVal, 1) * 100 : 8, 8)}%`,
+                  minHeight: '2px', transition: 'height 0.2s'
+                }} />
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '3px' }}>
           {dayLabels.map((label, i) => (
             <div key={i} style={{ flex: 1, textAlign: 'center' }}>

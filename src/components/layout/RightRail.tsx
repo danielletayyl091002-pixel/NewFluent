@@ -6,6 +6,7 @@ import EventModal from '@/components/calendar/EventModal'
 import { nanoid } from 'nanoid'
 import { expandRecurring } from '@/lib/expandRecurring'
 import { safeDbWrite } from '@/lib/dbError'
+import { formatHourLabel, formatHourDecimal, formatTimeString } from '@/lib/timeFormat'
 
 const getEventColor = (task: Task) => task.color || 'var(--accent)'
 
@@ -29,13 +30,6 @@ import { useTrackerStore } from '@/stores/trackers'
 
 // Full 24h timetable: 12 AM (0) through 11 PM (23).
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
-
-function formatHour(h: number) {
-  if (h === 0) return '12 AM'
-  if (h === 12) return '12 PM'
-  if (h > 12) return `${h - 12} PM`
-  return `${h} AM`
-}
 
 function WeekStrip({ today, onDayClick, selectedDay }: {
   today: Date
@@ -120,7 +114,10 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
   onEventClick?: (task: Task) => void
 }) {
   const HOUR_H = 52
-  const START = 6
+  // Grid renders all 24h (12 AM through 11 PM). START is the topmost
+  // hour and END the cut-off for new events / now-line.
+  const START = 0
+  const END = 24
   const currentTop = (now - START) * HOUR_H
   const [dragStart, setDragStart] = useState<number | null>(null)
   const [dragEnd, setDragEnd] = useState<number | null>(null)
@@ -140,7 +137,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
   function yToHour(y: number, containerTop: number): number {
     const relY = y - containerTop
     const hour = START + relY / HOUR_H
-    return Math.max(START, Math.min(22, Math.round(hour * 4) / 4))
+    return Math.max(START, Math.min(END - 0.25, Math.round(hour * 4) / 4))
   }
 
   function getHourFromMouseEvent(e: MouseEvent): number {
@@ -174,7 +171,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         const newEnd = newStart + moveDuration.current
         onUpdateTask(movingTask.uid, {
           startTime: fmt(newStart),
-          endTime: fmt(Math.min(22, newEnd)),
+          endTime: fmt(Math.min(END - 0.25, newEnd)),
         })
       } else if (movingTask && moveHour === null && onEventClick) {
         // Click without move — open edit modal
@@ -203,13 +200,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
     return String(hrs).padStart(2, '0') + ':' + String(mins).padStart(2, '0')
   }
 
-  function fmtDisplay(h: number) {
-    const hrs = Math.floor(h)
-    const mins = Math.round((h - hrs) * 60)
-    const period = hrs >= 12 ? 'PM' : 'AM'
-    const displayHr = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs
-    return `${displayHr}:${String(mins).padStart(2, '0')} ${period}`
-  }
+  const fmtDisplay = formatHourDecimal
 
   return (
     <div
@@ -276,7 +267,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
             width: '52px', paddingTop: '4px',
             paddingLeft: '8px', flexShrink: 0,
             whiteSpace: 'nowrap'
-          }}>{formatHour(h)}</span>
+          }}>{formatHourLabel(h)}</span>
         </div>
       ))}
 
@@ -357,7 +348,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
             {heightPx > 40 && (
               <div style={{
                 fontSize: '11px', color: getEventStyle(color).color || color, opacity: 0.8, marginTop: '2px',
-              }}>{task.startTime} – {task.endTime}</div>
+              }}>{formatTimeString(task.startTime!)} – {formatTimeString(task.endTime!)}</div>
             )}
             <div
               data-rail-resize="true"
@@ -412,7 +403,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         </div>
       )}
 
-      {now >= START && now <= 22 && (
+      {now >= START && now < END && (
         <div style={{
           position: 'absolute',
           top: `${currentTop}px`,
