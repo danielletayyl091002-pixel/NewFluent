@@ -502,6 +502,37 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
   transform: none;
 }
 
+/* ─── Sculpt: contain shadows so they don't leak across boundaries ───
+   Pattern adopted from production neumorphic/skeuomorphic UIs (Apple
+   System Settings, Things, Bear): parents that group sculpted elements
+   create their own stacking context with `isolation: isolate`, and
+   cards that hold interactive controls clip overflow so child raised
+   shadows can never escape the card silhouette. */
+[data-style="sculpt"] aside,
+[data-style="sculpt"] nav,
+[data-style="sculpt"] section,
+[data-style="sculpt"] [data-card],
+[data-style="sculpt"] .tracker-card {
+  isolation: isolate;
+}
+/* Cards/containers that hold interactive sculpted children should clip
+   any shadow overflow at their rounded edge. Apply by adding the
+   `data-sculpt-clip` attribute to wrappers that contain `<button>`s,
+   pills, inputs, etc., so the raised shadows of children stay inside. */
+[data-style="sculpt"] [data-sculpt-clip] {
+  overflow: hidden;
+  border-radius: var(--radius-card, 16px);
+}
+/* Inner pills (data-pill) inside small containers should not have
+   shadow blur larger than the container can hold — reduce blur radius
+   when the pill sits inside a clipped card. */
+[data-style="sculpt"] [data-sculpt-clip] [data-pill] {
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.10),
+    inset 0 1px 1px rgba(255,255,255,0.5),
+    inset 0 -1px 1px rgba(0,0,0,0.06) !important;
+}
+
 /* ─── Density ─── */
 [data-density="compact"] { --spacing-base: 0.75; --density-padding: 6px; --density-gap: 6px; --density-section: 24px; }
 [data-density="comfortable"] { --spacing-base: 1; --density-padding: 12px; --density-gap: 12px; --density-section: 40px; }

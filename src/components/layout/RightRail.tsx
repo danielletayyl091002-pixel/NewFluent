@@ -322,7 +322,16 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
         const heightPx = Math.max(((endHour - startHour) + (endMin - startMin) / 60) * HOUR_H - 2, 20)
         const color = getEventColor(task)
         return (
-          <div key={task.uid} data-rail-event={task.uid} className="calendar-event" style={{
+          <div key={task.uid} data-rail-event={task.uid} className="calendar-event"
+            onClick={(e) => {
+              // Click fallback — if the user clicked without dragging (no
+              // movingTask handoff to the window mouseup), still open the
+              // edit modal. Drag/resize handlers stopPropagation so this
+              // only fires for real clicks.
+              if ((e.target as HTMLElement).closest('[data-rail-resize]')) return
+              onEventClick?.(task)
+            }}
+            style={{
             position: 'absolute',
             top: `${topPx}px`,
             left: '60px', right: '8px',

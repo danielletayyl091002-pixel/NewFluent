@@ -191,17 +191,23 @@ export default function SettingsPage() {
             {(['flat', 'sculpt'] as const).map(style => (
               <button
                 key={style}
+                data-no-sculpt
                 onClick={() => {
                   setInterfaceStyle(style)
                   document.documentElement.setAttribute('data-style', style)
                   saveSetting('interface_style', style)
                 }}
                 style={{
-                  flex: '1 1 0', padding: '24px', borderRadius: 'var(--radius-card, 14px)',
+                  flex: '1 1 0', padding: '24px', borderRadius: '14px',
                   minHeight: '160px',
                   border: interfaceStyle === style ? '2px solid var(--accent)' : '1px solid var(--border)',
                   background: interfaceStyle === style ? 'var(--accent-light)' : 'var(--bg-secondary)',
                   cursor: 'pointer', textAlign: 'left',
+                  // Isolate the preview from the live theme + clip any inner shadows
+                  // so the sample never looks like it's bleeding out of its card.
+                  overflow: 'hidden',
+                  isolation: 'isolate',
+                  position: 'relative',
                 }}
               >
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
