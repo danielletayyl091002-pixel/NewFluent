@@ -170,7 +170,7 @@ export default function TrackerGrid() {
 
   return (
     <div>
-      <div style={{
+      <div data-flat style={{
         display: 'flex', alignItems: 'center',
         justifyContent: 'flex-end', marginBottom: '16px'
       }}>
@@ -187,7 +187,7 @@ export default function TrackerGrid() {
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>
           Daily Progress (pick up to 3)
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div data-flat style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {definitions.map(t => {
             const isSelected = ringUids.includes(t.uid)
             const atLimit = ringUids.length >= 3 && !isSelected

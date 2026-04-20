@@ -112,12 +112,12 @@ export default function PageCanvas() {
     <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)' }}>
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '80px 80px 0' }}>
         {/* Page title — emoji + title in one bubble */}
-        <div style={{ marginBottom: '16px', position: 'relative' }}>
+        <div data-flat style={{ marginBottom: '16px', position: 'relative' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '14px',
             padding: '10px 24px 10px 16px',
             background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-card, 14px)',
+            borderRadius: '14px',
             width: '100%', boxSizing: 'border-box',
           }}>
             <button
@@ -151,7 +151,7 @@ export default function PageCanvas() {
                 padding: '16px', minWidth: '280px', overflow: 'hidden',
               }} onClick={e => e.stopPropagation()}>
                 <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Choose icon</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 44px)', gap: '8px', justifyContent: 'center' }}>
+                <div data-flat style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 44px)', gap: '8px', justifyContent: 'center' }}>
                   {['📄','📝','📋','📌','📎','📊','🏠','🎯','🚀','💡','🔥','⭐','💪','🎉','📅','💰','🔔','💬','📖','🧠','❤️','✅','🎨','🔍','⚡','🌈','🎵','☕','🌿','🗂️'].map(emoji => (
                     <button key={emoji} onClick={async () => {
                       if (page?.id) { await db.pages.update(page.id, { icon: emoji }); setPage(prev => prev ? { ...prev, icon: emoji } : null); window.dispatchEvent(new CustomEvent('page-title-updated')) }
@@ -175,7 +175,7 @@ export default function PageCanvas() {
             </>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', alignItems: 'center' }}>
+        <div data-flat style={{ display: 'flex', gap: '6px', marginBottom: '16px', alignItems: 'center' }}>
           {(['page', 'board', 'calendar', 'canvas'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               style={{

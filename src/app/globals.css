@@ -478,6 +478,27 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
   border: 1px solid transparent !important;
   transform: none !important;
 }
+/* Subtree opt-out: any element marked [data-flat] (and its descendants)
+   stays flat regardless of sculpt mode. Use for toolbars, tab rows,
+   emoji pickers, page-title bars — anywhere the design wants neutral
+   surfaces, not raised buttons/inputs. */
+[data-style="sculpt"] [data-flat],
+[data-style="sculpt"] [data-flat] button,
+[data-style="sculpt"] [data-flat] input,
+[data-style="sculpt"] [data-flat] textarea,
+[data-style="sculpt"] [data-flat] select {
+  box-shadow: none !important;
+  transform: none !important;
+}
+[data-style="sculpt"] [data-flat] button {
+  border-radius: var(--radius-base, 6px) !important;
+  border: 1px solid transparent !important;
+}
+[data-style="sculpt"] [data-flat] input,
+[data-style="sculpt"] [data-flat] textarea {
+  border-radius: var(--radius-base, 6px) !important;
+  border: 1px solid var(--border) !important;
+}
 [data-style="sculpt"] aside button:hover,
 [data-style="sculpt"] nav button:hover {
   background: var(--bg-hover) !important;

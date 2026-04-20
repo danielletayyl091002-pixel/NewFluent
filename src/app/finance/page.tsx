@@ -118,7 +118,7 @@ export default function FinancePage() {
             color: 'var(--text-primary)', margin: 0 }}>
             Finance
           </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 0' }}>
+          <div data-flat style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 0' }}>
             <div style={{ position: 'relative' }}>
               <button
                 onClick={e => { e.stopPropagation(); setShowYearMenu(p => !p) }}
@@ -173,7 +173,7 @@ export default function FinancePage() {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div data-flat style={{ display: 'flex', gap: '8px' }}>
           <select
             value={currency}
             onChange={async e => {

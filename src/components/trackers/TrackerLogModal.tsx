@@ -134,7 +134,7 @@ export default function TrackerLogModal({ tracker, currentValue, onLog, onClose 
         {tracker.type === 'select' && options.length > 0 ? (
           <>
             {dateTimeSection}
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div data-flat style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
               {options.map((opt, i) => (
                 <button key={i} onClick={() => handleLog(i + 1)} style={{
                   fontSize: '32px', background: 'var(--bg-hover)', border: 'none',
