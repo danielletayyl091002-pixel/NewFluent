@@ -632,40 +632,43 @@ export default function CanvasView({ pageUid }: { pageUid: string }) {
                 overflow: 'hidden',
               }}
             >
-              {/* Drag handle (slim, centered grabber) */}
+              {/* Floating toolbar — drag handle + delete. Hidden until hover or
+                  selection so the box looks clean (just the picture/text). */}
               <div
                 onMouseDown={e => startDrag(e, item)}
                 style={{
-                  height: '14px',
-                  flexShrink: 0,
-                  cursor: 'grab',
-                  background: 'transparent',
-                  borderBottom: '1px solid var(--border)',
+                  position: 'absolute',
+                  top: '4px',
+                  left: '4px',
+                  right: '4px',
+                  height: '20px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
+                  justifyContent: 'space-between',
+                  padding: '0 6px',
+                  borderRadius: '6px',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                  cursor: 'grab',
                   userSelect: 'none',
+                  opacity: isHovered || isSelected ? 1 : 0,
+                  pointerEvents: isHovered || isSelected ? 'auto' : 'none',
+                  transition: 'opacity 0.15s',
+                  zIndex: 2,
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-secondary)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
               >
                 <div style={{
-                  width: '24px',
+                  width: '20px',
                   height: '3px',
                   borderRadius: '2px',
                   background: 'var(--border)',
-                  margin: '0 auto',
                   pointerEvents: 'none',
                 }} />
                 <button
                   onMouseDown={e => e.stopPropagation()}
                   onClick={() => deleteItem(item)}
                   style={{
-                    position: 'absolute',
-                    right: '4px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
@@ -673,8 +676,6 @@ export default function CanvasView({ pageUid }: { pageUid: string }) {
                     fontSize: '14px',
                     lineHeight: 1,
                     padding: '0 2px',
-                    opacity: isHovered ? 1 : 0,
-                    transition: 'opacity 0.15s',
                   }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#EF4444' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-tertiary)' }}
