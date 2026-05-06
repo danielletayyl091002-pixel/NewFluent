@@ -46,14 +46,9 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
     init()
   }, [loadPagesStore])
 
-  // Home redirect: when the user lands on or navigates to '/', send them
-  // to their configured home page.
-  useEffect(() => {
-    if (pathname !== '/') return
-    db.settings.where('key').equals('homePageUid').first().then(s => {
-      if (s?.value) router.replace(`/page/${s.value}`)
-    })
-  }, [pathname, router])
+  // The root route now renders the Today dashboard directly. The legacy
+  // `homePageUid` redirect is removed — users who want a specific page on
+  // launch can pin it as a favorite or visit it directly.
 
   // Prop-driven refresh kept for legacy callers that may bump refreshKey.
   useEffect(() => {
