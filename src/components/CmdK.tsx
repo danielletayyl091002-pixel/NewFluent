@@ -17,6 +17,7 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
   const [results, setResults] = useState<Page[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('12h')
   const inputRef = useRef<HTMLInputElement>(null)
   const creatingRef = useRef(false)
   const createPageInStore = usePagesStore(s => s.createPage)
@@ -25,6 +26,7 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
   const quickActions = [
     { label: 'New Page', action: 'new-page', group: 'Actions' },
     { label: theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode', action: 'toggle-theme', group: 'Actions' },
+    { label: timeFormat === '12h' ? 'Switch to 24-hour Time' : 'Switch to 12-hour Time', action: 'toggle-time-format', group: 'Actions' },
     { label: 'Go to Finance', action: 'finance', group: 'Navigate' },
     { label: 'Go to Kanban', action: 'board', group: 'Navigate' },
     ...TEMPLATES.map(t => ({ label: t.name, action: `template:${t.name}`, group: 'Templates' })),
@@ -56,6 +58,8 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
       setTheme(next)
       localStorage.setItem('theme', next)
       document.documentElement.setAttribute('data-theme', next)
+      window.dispatchEvent(new CustomEvent('theme-changed', { detail: next }))
+      window.dispatchEvent(new CustomEvent('fluent-theme-changed', { detail: { theme: next } }))
       try {
         await db.settings.where('key').equals('theme').modify({ value: next })
       } catch (err) {
@@ -63,7 +67,14 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
         setTheme(prev)
         localStorage.setItem('theme', prev)
         document.documentElement.setAttribute('data-theme', prev)
+        window.dispatchEvent(new CustomEvent('theme-changed', { detail: prev }))
       }
+    } else if (action === 'toggle-time-format') {
+      const next = timeFormat === '12h' ? '24h' : '12h'
+      setTimeFormat(next)
+      localStorage.setItem('time_format', next)
+      // Notify other tabs / live components.
+      window.dispatchEvent(new CustomEvent('time-format-changed', { detail: next }))
     } else if (action === 'finance') {
       router.push('/finance')
     } else if (action === 'board') {
@@ -99,6 +110,8 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
   useEffect(() => {
     const saved = localStorage.getItem('theme') || 'light'
     setTheme(saved as 'light' | 'dark')
+    const savedTimeFormat = localStorage.getItem('time_format') || '12h'
+    setTimeFormat(savedTimeFormat as '12h' | '24h')
 
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -108,17 +121,28 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
     }
     window.addEventListener('keydown', onKeyDown)
 
-    // Cross-tab theme sync via native StorageEvent.
+    // Cross-tab theme sync via native StorageEvent + same-tab via custom event.
     function onStorage(e: StorageEvent) {
-      if (e.key === 'theme' && e.newValue) {
-        setTheme(e.newValue as 'light' | 'dark')
-      }
+      if (e.key === 'theme' && e.newValue) setTheme(e.newValue as 'light' | 'dark')
+      if (e.key === 'time_format' && e.newValue) setTimeFormat(e.newValue as '12h' | '24h')
+    }
+    function onThemeChange() {
+      const t = (localStorage.getItem('theme') || 'light') as 'light' | 'dark'
+      setTheme(t)
+    }
+    function onTimeFormatChange() {
+      const t = (localStorage.getItem('time_format') || '12h') as '12h' | '24h'
+      setTimeFormat(t)
     }
     window.addEventListener('storage', onStorage)
+    window.addEventListener('theme-changed', onThemeChange)
+    window.addEventListener('time-format-changed', onTimeFormatChange)
 
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('storage', onStorage)
+      window.removeEventListener('theme-changed', onThemeChange)
+      window.removeEventListener('time-format-changed', onTimeFormatChange)
     }
   }, [])
 

@@ -362,32 +362,22 @@ export default function SettingsPage() {
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', marginTop: '20px' }}>
             <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Font</div>
             <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>Typeface for your workspace</div>
-            <select
-              value={currentFont}
-              onChange={e => applyFont(e.target.value)}
+            {/* Current font preview + the expandable browse picker is the
+                ONE control. The previous separate <select> dropdown was
+                redundant — same fonts, less discoverable. */}
+            <button
+              onClick={() => setFontBrowseOpen(!fontBrowseOpen)}
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-base, 8px)',
                 border: '1px solid var(--border)', background: 'var(--bg-secondary)',
-                color: 'var(--text-primary)', fontSize: '14px', outline: 'none',
+                color: 'var(--text-primary)', fontSize: '14px', textAlign: 'left',
                 fontFamily: fontsLoaded ? FONT_GROUPS.flatMap(g => g.fonts).find(f => f.name === currentFont)?.family : undefined,
-                appearance: 'none', cursor: 'pointer',
-                backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%239CA3AF\' stroke-width=\'2\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'/%3E%3C/svg%3E")',
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}
             >
-              {FONT_GROUPS.flatMap(g => g.fonts).map(f => (
-                <option key={f.name} value={f.name} style={{ fontFamily: fontsLoaded ? f.family : undefined }}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-            <div
-              onClick={() => setFontBrowseOpen(!fontBrowseOpen)}
-              style={{ fontSize: '12px', color: 'var(--accent)', cursor: 'pointer', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <span style={{ transform: fontBrowseOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block' }}>&rsaquo;</span>
-              Browse fonts
-            </div>
+              <span>{currentFont}</span>
+              <span style={{ transform: fontBrowseOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', color: 'var(--text-tertiary)', fontSize: '12px' }}>▾</span>
+            </button>
             {fontBrowseOpen && (
               <div style={{ maxHeight: '240px', overflowY: 'auto', marginTop: '8px', border: '1px solid var(--border)', borderRadius: 'var(--radius-base, 8px)' }}>
                 {FONT_GROUPS.map(group => (

@@ -466,19 +466,29 @@ function ThemeToggle({ collapsed = false, hoveredItem, setHoveredItem }: {
   hoveredItem?: string | null
   setHoveredItem?: (id: string | null) => void
 }) {
-  const [theme, setTheme] = useState<'light'|'dark'>('light')
+  const [theme, setThemeLocal] = useState<'light'|'dark'>('light')
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme') || 'light'
-    setTheme(saved as 'light'|'dark')
+    const saved = (localStorage.getItem('theme') || 'light') as 'light'|'dark'
+    setThemeLocal(saved)
     document.documentElement.setAttribute('data-theme', saved)
+    // Cross-component sync: any other tab/component that toggles the
+    // theme dispatches `theme-changed`; mirror it here.
+    const onChange = () => setThemeLocal((localStorage.getItem('theme') || 'light') as 'light'|'dark')
+    window.addEventListener('theme-changed', onChange)
+    window.addEventListener('storage', (e) => { if (e.key === 'theme') onChange() })
+    return () => {
+      window.removeEventListener('theme-changed', onChange)
+    }
   }, [])
 
   async function toggle() {
     const next = theme === 'light' ? 'dark' : 'light'
-    setTheme(next)
+    setThemeLocal(next)
     localStorage.setItem('theme', next)
     document.documentElement.setAttribute('data-theme', next)
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: next }))
+    // Legacy event name kept for ClientLayout palette-bg cleanup hook
     window.dispatchEvent(new CustomEvent('fluent-theme-changed', { detail: { theme: next } }))
     db.settings.where('key').equals('theme').modify({ value: next })
 

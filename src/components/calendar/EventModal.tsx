@@ -389,7 +389,9 @@ export default function EventModal({
             {isEditing && (onDelete || onDeleted) && (
               <button onClick={handleDelete}
                 style={{ padding: '6px 14px', borderRadius: '9999px', border: 'none', background: '#FEE2E2', color: '#EF4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                Delete
+                {/* Ellipsis = "more dialog incoming" (OS convention).
+                    For recurring events the next click reveals a 3-way picker. */}
+                {initialEvent?.recurrence ? 'Delete…' : 'Delete'}
               </button>
             )}
           </div>
