@@ -111,7 +111,10 @@ function CanvasRichTextBox({
       onMouseDown={e => e.stopPropagation()}
       style={{
         flex: 1,
-        padding: '8px',
+        // Reserve 28px at the top so the floating drag/delete toolbar
+        // (positioned absolute at top:4 on hover/select) never overlaps
+        // the first line of text. Standard pattern in Figma/Whimsical.
+        padding: '28px 8px 8px',
         fontSize: '13px',
         color: 'var(--text-primary)',
         overflow: 'auto',
