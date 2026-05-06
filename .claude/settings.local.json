@@ -18,7 +18,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(git add *)",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Today dashboard at /: greeting, KPIs, schedule, tasks, trackers, recent pages' -m 'Replaces the placeholder home with a real dashboard following 2026 dashboard design research \\(F-pattern anchor top-left, 5-second comprehension, KPI strip across the top, primary content in left column, secondary in right\\). Branded empty states with one clear CTA per Eleken/Mobbin guidance. *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Empty states + active states + cross-app CmdK search' -m 'C — Empty states \\(Eleken/Mobbin pattern: branded look, plain message, one CTA, teach what belongs\\): *)"
     ]
   }
 }

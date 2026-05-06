@@ -258,7 +258,15 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
         .page-item-actions { display: none; }
         .page-item:hover .page-item-actions { display: flex; }
         .page-item:hover { background: var(--bg-hover); }
-        .page-item.active { background: var(--accent-light) !important; color: var(--accent) !important; }
+        /* Active page row: distinctly higher contrast than hover so users
+           always know where they are. Accent bar on the left + accent
+           text + slightly stronger background. */
+        .page-item.active {
+          background: var(--accent-light) !important;
+          color: var(--accent) !important;
+          box-shadow: inset 3px 0 0 var(--accent);
+          font-weight: 600;
+        }
       `}</style>
     </aside>
   )
@@ -395,16 +403,31 @@ function NavLink({ children, onClick, icon, itemId, collapsed, hoveredItem, setH
   hoveredItem: string | null
   setHoveredItem: (id: string | null) => void
 }) {
+  const pathname = usePathname()
+  // Map itemId → route prefix so the active state highlights for sub-routes too
+  const routeMap: Record<string, string> = {
+    trackers: '/trackers',
+    finance: '/finance',
+    kanban: '/board',
+    settings: '/settings',
+    home: '/',
+  }
+  const isActive = (() => {
+    const route = routeMap[itemId]
+    if (!route) return false
+    if (route === '/') return pathname === '/'
+    return pathname === route || pathname.startsWith(route + '/')
+  })()
   const showTooltip = collapsed && hoveredItem === itemId
   return (
     <div
       onClick={onClick}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-hover)'
+        if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-hover)'
         setHoveredItem(itemId)
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.background = 'transparent'
+        if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'transparent'
         setHoveredItem(null)
       }}
       style={{
@@ -415,11 +438,15 @@ function NavLink({ children, onClick, icon, itemId, collapsed, hoveredItem, setH
         padding: collapsed ? '10px 0' : '10px 16px',
         borderRadius: 'var(--radius-sm, 6px)',
         cursor: 'pointer', fontSize: '13px',
-        color: 'var(--text-secondary)', marginBottom: '1px',
+        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+        background: isActive ? 'var(--accent-light)' : 'transparent',
+        boxShadow: isActive ? 'inset 3px 0 0 var(--accent)' : 'none',
+        fontWeight: isActive ? 600 : 400,
+        marginBottom: '1px',
         transition: 'padding 200ms ease-in-out, gap 200ms ease-in-out',
       }}
     >
-      <span style={{ color: 'var(--text-tertiary)', flexShrink: 0, display: 'flex' }}>
+      <span style={{ color: isActive ? 'var(--accent)' : 'var(--text-tertiary)', flexShrink: 0, display: 'flex' }}>
         {icon}
       </span>
       <span style={{

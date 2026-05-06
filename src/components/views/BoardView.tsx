@@ -209,12 +209,14 @@ export default function BoardView({ pageUid }: { pageUid: string }) {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
-                    width: '8px', height: '8px',
-                    borderRadius: '50%', background: col.color
+                    width: '10px', height: '10px',
+                    borderRadius: '50%', background: col.color,
+                    boxShadow: `0 0 0 2px ${col.color}22`,
                   }} />
                   <span style={{
-                    fontSize: '13px', fontWeight: 600,
-                    color: 'var(--text-primary)'
+                    fontSize: '12px', fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    textTransform: 'uppercase', letterSpacing: '0.06em',
                   }}>
                     {col.label}
                   </span>
@@ -262,6 +264,22 @@ export default function BoardView({ pageUid }: { pageUid: string }) {
                       onEdit={() => setEditTask(task)}
                     />
                   ))}
+                  {colTasks.length === 0 && addingTo !== col.id && (
+                    <div
+                      onClick={() => setAddingTo(col.id)}
+                      style={{
+                        padding: '20px 12px', textAlign: 'center',
+                        border: '1px dashed var(--border)',
+                        borderRadius: 'var(--radius-base, 8px)',
+                        color: 'var(--text-tertiary)', fontSize: '12px',
+                        cursor: 'pointer', lineHeight: 1.5,
+                      }}
+                    >
+                      Drop tasks here or
+                      <br />
+                      <span style={{ color: 'var(--accent)', fontWeight: 600 }}>+ click to add</span>
+                    </div>
+                  )}
                 </div>
               </SortableContext>
 

@@ -154,16 +154,26 @@ export default function TrackerGrid() {
   )
 
   if (definitions.length === 0) return (
-    <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
-      No trackers yet.
-      <div style={{ marginTop: '12px' }}>
-        <button onClick={() => setShowAdd(true)} style={{
-          padding: '8px 16px', borderRadius: 'var(--radius-base, 8px)',
-          border: '1px solid var(--border)',
-          background: 'transparent', color: 'var(--accent)',
-          fontSize: '13px', cursor: 'pointer', fontWeight: 500
-        }}>+ Add Tracker</button>
-      </div>
+    <div style={{
+      padding: '64px 24px', maxWidth: '420px', margin: '40px auto 0',
+      textAlign: 'center',
+      borderRadius: 'var(--radius-card, 12px)',
+      border: '1px dashed var(--border)',
+      background: 'var(--bg-secondary)',
+    }}>
+      <div style={{ fontSize: '32px', marginBottom: '8px' }} aria-hidden>📊</div>
+      <h2 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+        Start tracking what matters
+      </h2>
+      <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+        Habits, daily counts, mood, sleep — anything you want to see a trend on.
+        Trackers update your dashboard automatically.
+      </p>
+      <button onClick={() => setShowAdd(true)} data-no-sculpt style={{
+        padding: '8px 16px', borderRadius: 'var(--radius-base, 8px)',
+        border: 'none', background: 'var(--accent)', color: '#fff',
+        fontSize: '13px', cursor: 'pointer', fontWeight: 600,
+      }}>+ Add your first tracker</button>
       {showAdd && <AddTrackerModal onClose={() => setShowAdd(false)} />}
     </div>
   )

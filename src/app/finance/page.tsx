@@ -445,9 +445,23 @@ function FinanceTable({ title, entries, categories, total, currency, type, onAdd
 
       <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
         {entries.length === 0 ? (
-          <div style={{ padding: '24px', textAlign: 'center',
-            color: 'var(--text-tertiary)', fontSize: '13px' }}>
-            No {title.toLowerCase()} recorded yet
+          <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', marginBottom: '6px' }} aria-hidden>
+              {type === 'income' ? '💰' : '🧾'}
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              No {title.toLowerCase()} yet
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
+              Track {type === 'income' ? 'paychecks, refunds, anything coming in' : 'every coffee — small amounts add up'}.
+            </div>
+            <button onClick={onAdd} data-no-sculpt style={{
+              padding: '6px 14px', borderRadius: 'var(--radius-base, 8px)',
+              border: 'none', background: type === 'income' ? '#10B981' : '#EF4444',
+              color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+            }}>
+              + Add {type === 'income' ? 'income' : 'expense'}
+            </button>
           </div>
         ) : entries.map(entry => {
           const cat = getCat(entry.category)
