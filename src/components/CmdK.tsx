@@ -15,6 +15,7 @@ type SearchResult =
   | { kind: 'task'; uid: string; pageUid: string; title: string }
   | { kind: 'tracker'; uid: string; name: string }
   | { kind: 'finance'; id: number; note: string; amount: number; type: 'income' | 'expense' }
+  | { kind: 'action'; label: string; action: string }
 
 interface CmdKProps {
   onPageCreated?: () => void
@@ -51,7 +52,11 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
     else if (r.kind === 'task') router.push(r.pageUid ? `/page/${r.pageUid}` : '/board')
     else if (r.kind === 'tracker') router.push(`/trackers/${r.uid}`)
     else if (r.kind === 'finance') router.push('/finance')
+    else if (r.kind === 'action') handleQuickActionRef.current?.(r.action)
   }, [router])
+  // Forward ref so activateResult (declared early) can call the handler
+  // (declared later) without a TDZ. Set in an effect below.
+  const handleQuickActionRef = useRef<((action: string) => void) | null>(null)
 
   function close() {
     setOpen(false)
@@ -124,6 +129,10 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
       router.push(`/page/${uid}`)
     }
   }, [theme, router, onPageCreated])
+
+  // Keep the ref pointed at the latest handleQuickAction so activateResult
+  // can invoke it without a TDZ.
+  useEffect(() => { handleQuickActionRef.current = handleQuickAction }, [handleQuickAction])
 
   // Mount: read theme, register keydown
   useEffect(() => {
@@ -229,7 +238,14 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
         db.trackerDefinitions.filter(t => (t.name || '').toLowerCase().includes(q)).limit(4).toArray(),
         db.financeEntries.filter(e => (e.note || '').toLowerCase().includes(q) || (e.category || '').toLowerCase().includes(q)).limit(4).toArray(),
       ])
+      // Also surface matching quick actions ("Go to Kanban", "Switch to
+      // Dark Mode", template names…) so navigating to a destination
+      // doesn't require clearing the input first.
+      const matchingActions = quickActions
+        .filter(a => a.label.toLowerCase().includes(q))
+        .slice(0, 6)
       const merged: SearchResult[] = [
+        ...matchingActions.map(a => ({ kind: 'action' as const, label: a.label, action: a.action })),
         ...pages.map(p => ({ kind: 'page' as const, uid: p.uid, title: p.title || 'Untitled', icon: p.icon })),
         ...tasks.map(t => ({ kind: 'task' as const, uid: t.uid, pageUid: t.pageUid, title: t.title || 'Untitled task' })),
         ...trackers.map(t => ({ kind: 'tracker' as const, uid: t.uid, name: t.name })),
@@ -333,6 +349,7 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
             (() => {
               // Group results by kind so the user scans by type
               const groups: { kind: SearchResult['kind']; label: string; items: SearchResult[] }[] = [
+                { kind: 'action',  label: 'Actions',  items: results.filter(r => r.kind === 'action') },
                 { kind: 'page',    label: 'Pages',    items: results.filter(r => r.kind === 'page') },
                 { kind: 'task',    label: 'Tasks',    items: results.filter(r => r.kind === 'task') },
                 { kind: 'tracker', label: 'Trackers', items: results.filter(r => r.kind === 'tracker') },
@@ -348,7 +365,10 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
                   }}>{g.label}</div>
                   {g.items.map(r => {
                     const i = idx++
-                    const key = r.kind + ':' + ('uid' in r ? r.uid : r.id)
+                    const key =
+                      r.kind === 'page' || r.kind === 'task' || r.kind === 'tracker' ? `${r.kind}:${r.uid}`
+                      : r.kind === 'finance' ? `finance:${r.id}`
+                      : `action:${r.action}`
                     return (
                       <div
                         key={key}
@@ -367,6 +387,7 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
                           {r.kind === 'task' && r.title}
                           {r.kind === 'tracker' && r.name}
                           {r.kind === 'finance' && (r.note || '(no note)')}
+                          {r.kind === 'action' && r.label}
                         </span>
                         {r.kind === 'finance' && (
                           <span style={{
@@ -412,7 +433,7 @@ export default function CmdK({ onPageCreated }: CmdKProps = {}) {
   )
 }
 
-function ResultIcon({ kind, icon }: { kind: 'page' | 'task' | 'tracker' | 'finance'; icon?: string | null }) {
+function ResultIcon({ kind, icon }: { kind: 'page' | 'task' | 'tracker' | 'finance' | 'action'; icon?: string | null }) {
   if (kind === 'page') {
     return <span style={{ width: '18px', textAlign: 'center', opacity: 0.85 }}>{icon || '📄'}</span>
   }
@@ -421,6 +442,7 @@ function ResultIcon({ kind, icon }: { kind: 'page' | 'task' | 'tracker' | 'finan
     task:    { glyph: '☐',  color: 'var(--text-tertiary)' },
     tracker: { glyph: '◯',  color: 'var(--text-tertiary)' },
     finance: { glyph: '$',  color: 'var(--text-tertiary)' },
+    action:  { glyph: '⌘',  color: 'var(--accent)' },
   }
   const { glyph, color } = map[kind]
   return (
