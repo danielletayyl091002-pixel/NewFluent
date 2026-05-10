@@ -222,6 +222,7 @@ export default function EventModal({
     >
       <div
         ref={modalRef}
+        data-modal
         onClick={e => e.stopPropagation()}
         style={{
           width: '480px', maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto',

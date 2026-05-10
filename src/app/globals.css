@@ -688,6 +688,25 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 [data-style="sculpt"] .tracker-card {
   isolation: isolate;
 }
+
+/* Modal / dialog inner panel. Any element marked with `data-modal`
+   OR carrying the convention modal-shadow (inline `0 16px 48px`)
+   gets the popover-level lift. The substring match catches all 9
+   existing modal panels in the codebase without each one needing a
+   data-attribute change. */
+[data-style="sculpt"] [data-modal],
+[data-style="sculpt"] [style*="0 16px 48px"] {
+  border-radius: var(--radius-card) !important;
+  box-shadow: var(--sculpt-l5) !important;
+  border: var(--border-sculpt) !important;
+}
+/* Calendar grid containers (the wrapper has data-cal-grid) get l2 — they
+   should look like a contained surface, not a floating card. */
+[data-style="sculpt"] [data-cal-grid] {
+  border-radius: var(--radius-card) !important;
+  box-shadow: var(--sculpt-l2) !important;
+  border: var(--border-sculpt) !important;
+}
 /* Cards/containers that hold interactive sculpted children should clip
    any shadow overflow at their rounded edge. Apply by adding the
    `data-sculpt-clip` attribute to wrappers that contain `<button>`s,

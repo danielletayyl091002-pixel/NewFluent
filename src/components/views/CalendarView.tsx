@@ -448,7 +448,7 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
   }
 
   return (
-    <div style={{
+    <div data-cal-grid style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       border: '1px solid var(--border)',
       borderRadius: '12px', overflow: 'hidden'
@@ -1590,7 +1590,7 @@ export default function CalendarView({
         />
       ) : (
         /* Day view — single day column */
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
+        <div data-cal-grid style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
           <div
             ref={dayGridRef}
             onMouseDown={handleDayMouseDown}

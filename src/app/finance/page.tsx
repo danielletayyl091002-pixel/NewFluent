@@ -246,7 +246,7 @@ export default function FinancePage() {
         {monthlyData.map((m, i) => {
           const isCurrentMonth = i === currentMonth
           return (
-            <div key={m.month}
+            <div key={m.month} data-card
               onClick={() => setSelectedMonth(selectedMonth === i ? null : i)}
               style={{
               background: selectedMonth === i ? 'var(--accent-light)' : 'var(--bg-primary)',
@@ -404,7 +404,7 @@ function FinanceTable({ title, entries, categories, total, currency, type, onAdd
     categories.find(c => c.name === catName)
 
   return (
-    <div style={{
+    <div data-card style={{
       background: 'var(--bg-primary)',
       borderRadius: 'var(--radius-card, 12px)',
       border: '1px solid var(--border)',

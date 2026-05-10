@@ -45,7 +45,7 @@ export default function MonthDetail({
   const totalInc = incomeEntries2.reduce((s, e) => s + e.amount, 0)
 
   return (
-    <div style={{
+    <div data-card style={{
       background: 'var(--bg-primary)',
       borderRadius: 'var(--radius-card, 12px)',
       border: '2px solid var(--accent)',
