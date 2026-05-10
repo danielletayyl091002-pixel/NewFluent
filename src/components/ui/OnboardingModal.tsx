@@ -68,10 +68,9 @@ export default function OnboardingModal({ onComplete }: Props) {
     }))
     await db.blocks.bulkAdd(blocks)
 
-    // Mark onboarding complete and point the home redirect at the
-    // new page so future visits to '/' land on Getting Started.
+    // Mark onboarding complete. The home route now renders the Today
+    // dashboard; legacy homePageUid is intentionally NOT written.
     await db.settings.add({ key: 'onboarding_complete', value: 'true' })
-    await db.settings.add({ key: 'homePageUid', value: uid })
 
     onComplete()
     router.push(`/page/${uid}`)

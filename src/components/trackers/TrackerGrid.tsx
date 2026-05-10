@@ -25,7 +25,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useTrackerStore } from '@/stores/trackers'
-import { db, TrackerDefinition } from '@/db/schema'
+import { db, TrackerDefinition, TrackerLog } from '@/db/schema'
 import TrackerLogModal from './TrackerLogModal'
 
 const ICON_CATEGORIES: { label: string; icons: { name: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] }[] = [
@@ -304,6 +304,11 @@ export default function TrackerGrid() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Insights — Daylio-style mood↔activity correlation. Only renders
+          when there's a select (mood) tracker AND at least one other
+          tracker with shared logged days. */}
+      <MoodCorrelations definitions={definitions} logs={logs} />
 
       {activeTracker && (
         <TrackerLogModal
@@ -1331,5 +1336,94 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// Daylio-style insights: for each non-mood tracker, compute the average mood
+// on days it was logged vs days it wasn't. Shows the gap as a tiny insight.
+function MoodCorrelations({ definitions, logs }: { definitions: TrackerDefinition[]; logs: TrackerLog[] }) {
+  const moodTracker = definitions.find(d => d.type === 'select')
+  if (!moodTracker) return null
+
+  // All distinct dates with at least one log of any kind (last 60 days only)
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 60)
+  const cutoffStr = cutoff.toISOString().split('T')[0]
+  const moodByDate = new Map<string, number>()
+  for (const l of logs) {
+    if (l.trackerUid !== moodTracker.uid || l.date < cutoffStr) continue
+    moodByDate.set(l.date, (moodByDate.get(l.date) || 0) + l.value)
+  }
+  if (moodByDate.size < 5) return null
+
+  const opts: string[] = (() => { try { return JSON.parse(moodTracker.options || '[]') } catch { return [] } })()
+
+  const insights = definitions
+    .filter(d => d.uid !== moodTracker.uid)
+    .map(d => {
+      const datesWith = new Set<string>()
+      for (const l of logs) {
+        if (l.trackerUid !== d.uid || l.date < cutoffStr || l.value <= 0) continue
+        datesWith.add(l.date)
+      }
+      const allMoodDates = [...moodByDate.keys()]
+      const withMoods = allMoodDates.filter(date => datesWith.has(date)).map(date => moodByDate.get(date)!)
+      const withoutMoods = allMoodDates.filter(date => !datesWith.has(date)).map(date => moodByDate.get(date)!)
+      if (withMoods.length < 2 || withoutMoods.length < 2) return null
+      const avg = (a: number[]) => a.reduce((s, n) => s + n, 0) / a.length
+      const withAvg = avg(withMoods)
+      const withoutAvg = avg(withoutMoods)
+      const delta = withAvg - withoutAvg
+      return { tracker: d, withAvg, withoutAvg, delta, withCount: withMoods.length }
+    })
+    .filter((x): x is NonNullable<typeof x> => Boolean(x))
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 4)
+
+  if (insights.length === 0) return null
+
+  return (
+    <section style={{
+      marginTop: '32px', padding: '20px',
+      borderRadius: 'var(--radius-card, 12px)',
+      background: 'var(--bg-secondary)',
+      border: '1px solid var(--border)',
+    }}>
+      <h2 style={{
+        margin: '0 0 4px', fontSize: '14px', fontWeight: 700,
+        color: 'var(--text-primary)',
+      }}>
+        Mood patterns
+      </h2>
+      <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+        How your trackers correlate with mood over the last 60 days.
+      </p>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {insights.map(({ tracker, withAvg, delta, withCount }) => {
+          const better = delta > 0.2
+          const worse = delta < -0.2
+          const neutral = !better && !worse
+          const moodLabel = opts[Math.round(withAvg) - 1] || `${withAvg.toFixed(1)}`
+          return (
+            <li key={tracker.uid} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: tracker.color, flexShrink: 0 }} />
+              <span style={{ flex: 1, color: 'var(--text-primary)' }}>
+                Days with <strong>{tracker.name}</strong>: mood ≈ {moodLabel}
+              </span>
+              <span style={{
+                fontSize: '11px', fontWeight: 600,
+                color: better ? '#10B981' : worse ? '#EF4444' : 'var(--text-tertiary)',
+                background: better ? '#10B98118' : worse ? '#EF444418' : 'var(--bg-hover)',
+                padding: '2px 8px', borderRadius: '9999px',
+              }}>
+                {neutral ? `~ same` : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`}
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                {withCount}d
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }

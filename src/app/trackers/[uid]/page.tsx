@@ -358,6 +358,75 @@ export default function TrackerDetailPage() {
           />
         </div>
 
+        {/* Year in pixels — Daylio's signature view, only for select trackers */}
+        {tracker.type === 'select' && tracker.options && (() => {
+          const opts: string[] = (() => { try { return JSON.parse(tracker.options!) } catch { return [] } })()
+          const moodPalette = ['#EF4444', '#F97316', '#EAB308', '#84CC16', '#22C55E']
+          const colorFor = (v: number) => {
+            if (v <= 0) return 'var(--bg-hover)'
+            const optCount = Math.max(opts.length, 1)
+            if (optCount === 5) return moodPalette[v - 1] || color
+            const idx = Math.min(moodPalette.length - 1,
+              Math.floor((v - 1) / Math.max(1, optCount - 1) * (moodPalette.length - 1)))
+            return moodPalette[idx]
+          }
+          const today = new Date()
+          const start = new Date(today.getFullYear(), 0, 1)
+          // Pad so the grid begins on Monday: column 0 = first week of the year
+          const weeks = 53
+          const cells: { date: Date; value: number }[][] = []
+          for (let w = 0; w < weeks; w++) {
+            const col: { date: Date; value: number }[] = []
+            for (let d = 0; d < 7; d++) {
+              const date = new Date(start)
+              date.setDate(start.getDate() + w * 7 + d - start.getDay())
+              const dateStr = formatDateStr(date)
+              const val = logs.filter(l => l.date === dateStr).reduce((s, l) => s + l.value, 0)
+              col.push({ date, value: val })
+            }
+            cells.push(col)
+          }
+          return (
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 12px' }}>
+                {today.getFullYear()} in pixels
+              </h2>
+              <div style={{
+                display: 'grid', gridTemplateColumns: `repeat(${weeks}, 1fr)`,
+                gridAutoFlow: 'column', gridTemplateRows: 'repeat(7, 1fr)',
+                gap: '2px', padding: '12px',
+                borderRadius: 'var(--radius-base, 8px)',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+              }}>
+                {cells.map((col, w) => col.map((cell, d) => {
+                  const inYear = cell.date.getFullYear() === today.getFullYear()
+                  const isFuture = cell.date > today
+                  return (
+                    <div
+                      key={`${w}-${d}`}
+                      title={inYear && !isFuture ? `${cell.date.toLocaleDateString()}: ${cell.value > 0 ? opts[cell.value - 1] || cell.value : 'No log'}` : ''}
+                      style={{
+                        aspectRatio: '1', minWidth: '6px',
+                        borderRadius: '2px',
+                        background: !inYear || isFuture ? 'transparent' : colorFor(cell.value),
+                        opacity: cell.value > 0 ? 1 : 0.4,
+                      }}
+                    />
+                  )
+                }))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                <span>Less</span>
+                {moodPalette.map(c => (
+                  <div key={c} style={{ width: '10px', height: '10px', borderRadius: '2px', background: c }} />
+                ))}
+                <span>More</span>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Log entries for this week */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
