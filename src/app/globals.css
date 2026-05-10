@@ -420,49 +420,111 @@ button, a, input, select, textarea {
 div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 .sortable-tracker-card:hover .tracker-drag-handle { opacity: 0.6 !important; }
 
-/* ─── Sculpt Mode (Neumorphic) ─── */
+/* ─── Sculpt Mode — Elevation system ───
+   Reference design uses 5 distinct elevation levels (flat → popover) with
+   a paired highlight + dual-shadow recipe. We keep the existing colour
+   palette and only borrow the elevation/shadow geometry.
+
+   Token model:
+     --sculpt-l1 → flat / disabled (no lift)
+     --sculpt-l2 → hover lift
+     --sculpt-l3 → raised resting state (default for buttons + cards)
+     --sculpt-l4 → modal / floating panel
+     --sculpt-l5 → popover / FAB
+     --sculpt-inset → recessed surface (inputs, pressed)
+     --sculpt-pressed → deeply pressed (button :active)
+
+   Each recipe pairs a top inner highlight with two outer drop shadows
+   (1 sharp for definition, 1 soft for depth) — the same trick the
+   reference uses to keep edges crisp without going cartoonish. */
 [data-style="sculpt"] {
-  --radius-btn: 9999px;
-  --radius-card: 24px;
-  --radius-input: 16px;
-  --shadow-raised:
-    0 4px 12px rgba(0,0,0,0.12),
-    0 1px 3px rgba(0,0,0,0.08),
-    inset 0 1px 1px rgba(255,255,255,0.6),
-    inset 0 -1px 1px rgba(0,0,0,0.06);
-  --shadow-inset:
-    inset 0 2px 6px rgba(0,0,0,0.10),
-    inset 0 1px 2px rgba(0,0,0,0.08),
-    inset 0 -1px 2px rgba(255,255,255,0.5);
-  --shadow-pressed:
-    inset 0 3px 8px rgba(0,0,0,0.15),
-    inset 0 1px 3px rgba(0,0,0,0.12);
-  --border-sculpt: 1px solid rgba(0,0,0,0.06);
+  /* Radius tokens — matches the reference 4/8/12/16/24px scale. We keep
+     sensible defaults rather than the reference's pill 9999px so the
+     UI doesn't read as "sea of pills". */
+  --radius-btn:   12px;
+  --radius-card:  16px;
+  --radius-input: 12px;
+  --radius-base:  8px;
+  --radius-sm:    6px;
+
+  --sculpt-highlight: inset 0 1px 0 rgba(255,255,255,0.7);
+  --sculpt-rim:       inset 0 0 0 1px rgba(0,0,0,0.04);
+
+  --sculpt-l1: var(--sculpt-highlight), var(--sculpt-rim),
+               0 1px 2px rgba(0,0,0,0.04);
+  --sculpt-l2: var(--sculpt-highlight), var(--sculpt-rim),
+               0 2px 4px rgba(0,0,0,0.06),
+               0 4px 10px rgba(0,0,0,0.05);
+  --sculpt-l3: var(--sculpt-highlight), var(--sculpt-rim),
+               0 1px 2px rgba(0,0,0,0.05),
+               0 4px 8px rgba(0,0,0,0.06),
+               0 8px 20px rgba(0,0,0,0.05);
+  --sculpt-l4: var(--sculpt-highlight), var(--sculpt-rim),
+               0 4px 8px rgba(0,0,0,0.08),
+               0 12px 28px rgba(0,0,0,0.10);
+  --sculpt-l5: var(--sculpt-highlight), var(--sculpt-rim),
+               0 8px 16px rgba(0,0,0,0.10),
+               0 24px 48px rgba(0,0,0,0.14);
+
+  --sculpt-inset:
+    inset 0 2px 4px rgba(0,0,0,0.06),
+    inset 0 1px 2px rgba(0,0,0,0.04),
+    inset 0 -1px 0 rgba(255,255,255,0.5);
+  --sculpt-pressed:
+    inset 0 3px 6px rgba(0,0,0,0.12),
+    inset 0 1px 2px rgba(0,0,0,0.08);
+
+  --border-sculpt: 1px solid rgba(0,0,0,0.04);
+
+  /* Legacy aliases kept so older selectors don't drop their styles. */
+  --shadow-raised:  var(--sculpt-l3);
+  --shadow-inset:   var(--sculpt-inset);
+  --shadow-pressed: var(--sculpt-pressed);
 }
-/* Sculpt calendar events */
+
+[data-theme="dark"][data-style="sculpt"] {
+  --sculpt-highlight: inset 0 1px 0 rgba(255,255,255,0.06);
+  --sculpt-rim:       inset 0 0 0 1px rgba(255,255,255,0.04);
+  --sculpt-l1: var(--sculpt-highlight), var(--sculpt-rim), 0 1px 2px rgba(0,0,0,0.4);
+  --sculpt-l2: var(--sculpt-highlight), var(--sculpt-rim), 0 2px 4px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.3);
+  --sculpt-l3: var(--sculpt-highlight), var(--sculpt-rim), 0 1px 2px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.3);
+  --sculpt-l4: var(--sculpt-highlight), var(--sculpt-rim), 0 4px 8px rgba(0,0,0,0.5), 0 12px 28px rgba(0,0,0,0.45);
+  --sculpt-l5: var(--sculpt-highlight), var(--sculpt-rim), 0 8px 16px rgba(0,0,0,0.5), 0 24px 48px rgba(0,0,0,0.5);
+  --sculpt-inset:
+    inset 0 2px 4px rgba(0,0,0,0.4),
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    inset 0 -1px 0 rgba(255,255,255,0.05);
+}
+
+/* Calendar events sit inside cards already — give them a single
+   elevation level (l1) so they read as raised but don't compete. */
 [data-style="sculpt"] .calendar-event {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06) !important;
-  border-top: 1px solid rgba(255,255,255,0.2) !important;
+  box-shadow: var(--sculpt-l1) !important;
   transition: box-shadow 0.2s, transform 0.1s;
 }
 [data-style="sculpt"] .calendar-event:active {
   transform: scale(0.99);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
-}
-[data-theme="dark"][data-style="sculpt"] .calendar-event {
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2) !important;
-  border-top: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: var(--sculpt-pressed) !important;
 }
 
+/* Buttons — default raised (l3), hover bumps to l2/l3, active = pressed. */
 [data-style="sculpt"] button:not([data-no-sculpt]) {
   border-radius: var(--radius-btn) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 2px 4px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06) !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
+  box-shadow: var(--sculpt-l3) !important;
+  border: var(--border-sculpt) !important;
   transition: box-shadow 0.15s, transform 0.1s;
 }
+[data-style="sculpt"] button:not([data-no-sculpt]):hover {
+  box-shadow: var(--sculpt-l4) !important;
+  transform: translateY(-1px);
+}
 [data-style="sculpt"] button:active:not([data-no-sculpt]) {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15) inset, 0 1px 2px rgba(0,0,0,0.10) inset !important;
-  transform: scale(0.98) translateY(1px);
+  box-shadow: var(--sculpt-pressed) !important;
+  transform: translateY(1px);
+}
+[data-style="sculpt"] button:disabled:not([data-no-sculpt]) {
+  box-shadow: var(--sculpt-l1) !important;
+  opacity: 0.5; transform: none;
 }
 /* Sidebar / nav rows must NEVER look like sculpt action buttons.
    Production neumorphic apps (Apple System Settings, Things 3, Bear,
@@ -498,13 +560,23 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
   border-radius: var(--radius-base, 6px) !important;
   border: 1px solid transparent !important;
 }
-[data-style="sculpt"] [data-flat] input,
+/* Specificity match — the global input rule chains 3 :not() selectors
+   (0,4,1). To beat it inside [data-flat] subtrees we add the same
+   :not() chain so this scores 0,5,1 and actually wins. Without this
+   the page title input renders the inner sculpt-input pill that
+   overlaps the data-flat wrapper's own border. */
+[data-style="sculpt"] [data-flat] input:not(.inline-input):not(.toggle-title-input):not(.finance-edit-input),
 [data-style="sculpt"] [data-flat] textarea {
   border-radius: var(--radius-base, 6px) !important;
-  /* Don't force a border — inline component styles decide. The original
-     intent of data-flat is "stop adding sculpt chrome", not "add new chrome". */
   border: none !important;
   background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+[data-style="sculpt"] [data-flat] input:not(.inline-input):not(.toggle-title-input):not(.finance-edit-input):focus,
+[data-style="sculpt"] [data-flat] textarea:focus {
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 /* ─── Responsive shells ───
@@ -565,26 +637,29 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 [data-style="sculpt"] .tracker-card,
 [data-style="sculpt"] [data-card] {
   border-radius: var(--radius-card) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 -1px 0 rgba(0,0,0,0.08) inset, 0 4px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06) !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
-  transform: translateY(0);
+  box-shadow: var(--sculpt-l3) !important;
+  border: var(--border-sculpt) !important;
   transition: box-shadow 0.2s, transform 0.15s;
 }
 [data-style="sculpt"] .tracker-card:hover,
 [data-style="sculpt"] [data-card]:hover {
-  box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 -1px 0 rgba(0,0,0,0.08) inset, 0 8px 16px rgba(0,0,0,0.12), 0 16px 32px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.08) !important;
+  box-shadow: var(--sculpt-l4) !important;
   transform: translateY(-2px);
 }
 [data-style="sculpt"] input:not(.inline-input):not(.toggle-title-input):not(.finance-edit-input),
 [data-style="sculpt"] textarea,
 [data-style="sculpt"] select:not(.inline-input):not(.finance-edit-input) {
   border-radius: var(--radius-input) !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08) inset, 0 1px 2px rgba(0,0,0,0.06) inset, 0 -1px 0 rgba(255,255,255,0.6) inset !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
+  box-shadow: var(--sculpt-inset) !important;
+  border: var(--border-sculpt) !important;
 }
-[data-theme="dark"][data-style="sculpt"] .tracker-card,
-[data-theme="dark"][data-style="sculpt"] [data-card] {
-  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 4px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2) !important;
+/* Focused input: subtle accent ring + still inset (no double-border).
+   Reference's text-field focus state: outline ring, not a heavy border. */
+[data-style="sculpt"] input:not(.inline-input):not(.toggle-title-input):not(.finance-edit-input):focus,
+[data-style="sculpt"] textarea:focus,
+[data-style="sculpt"] select:not(.inline-input):not(.finance-edit-input):focus {
+  outline: none !important;
+  box-shadow: var(--sculpt-inset), 0 0 0 2px var(--accent-light) !important;
 }
 [data-style="sculpt"] nav,
 [data-style="sculpt"] aside {

@@ -111,11 +111,13 @@ export default function PageCanvas() {
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)' }}>
       <div className="page-shell" style={{ maxWidth: '720px', margin: '0 auto' }}>
-        {/* Page title — emoji + title in one bubble */}
+        {/* Page title — emoji + title in one bubble. Spacing matches the
+            reference design: 16px inner padding, 12px gap, hairline border,
+            no nested chrome on the input. */}
         <div data-flat style={{ marginBottom: '16px', position: 'relative' }}>
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '14px',
-            padding: '10px 24px 10px 16px',
+            display: 'inline-flex', alignItems: 'center', gap: '12px',
+            padding: '12px 16px',
             background: 'var(--bg-secondary)', border: '1px solid var(--border)',
             borderRadius: '14px',
             width: '100%', boxSizing: 'border-box',
@@ -136,7 +138,7 @@ export default function PageCanvas() {
               style={{
                 fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.3,
                 border: 'none', outline: 'none', background: 'transparent',
-                boxShadow: 'none', padding: '4px 16px 4px 24px', flex: 1,
+                boxShadow: 'none', padding: 0, flex: 1,
                 color: 'var(--text-primary)', fontFamily: 'inherit', margin: 0,
               }}
             />
