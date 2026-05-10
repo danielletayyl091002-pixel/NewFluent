@@ -43,7 +43,7 @@ export default function TodayDashboard() {
 
   const pages = usePagesStore(s => s.pages)
   const loadPages = usePagesStore(s => s.load)
-  const { definitions: trackers, logs: trackerLogs, load: loadTrackers, getTodayValue } = useTrackerStore()
+  const { definitions: trackers, logs: trackerLogs, load: loadTrackers, getTodayValue, addLog, setTodayValue } = useTrackerStore()
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [ringedUids, setRingedUids] = useState<string[]>([])
@@ -219,29 +219,95 @@ export default function TodayDashboard() {
                   cta="Pin up to 3 from the Trackers page to see daily progress here"
                 />
               ) : (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {ringedTrackers.map(t => {
                     const v = getTodayValue(t.uid)
                     const pct = t.target > 0 ? Math.min(v / t.target, 1) : 0
+                    const opts: string[] = t.type === 'select' && t.options
+                      ? (() => { try { return JSON.parse(t.options!) } catch { return [] } })()
+                      : []
                     return (
-                      <li key={t.uid}
-                        onClick={() => router.push(`/trackers/${t.uid}`)}
-                        style={{ cursor: 'pointer', padding: '8px 10px', borderRadius: 'var(--radius-base, 8px)' }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                          <span style={{ color: 'var(--text-primary)' }}>{t.name}</span>
+                      <li key={t.uid} style={{ padding: '6px 4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', marginBottom: '6px' }}>
+                          <span
+                            onClick={() => router.push(`/trackers/${t.uid}`)}
+                            style={{ color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
+                          >{t.name}</span>
                           <span style={{ color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
-                            {t.type === 'select' ? '' : t.target > 0 ? `${v}/${t.target}` : String(v)}
+                            {t.type === 'select' ? (opts[v - 1] || '—') : t.target > 0 ? `${v}/${t.target}` : String(v)}
                           </span>
                         </div>
-                        <div style={{ height: '4px', borderRadius: '2px', background: 'var(--bg-hover)', overflow: 'hidden' }}>
-                          <div style={{
-                            height: '100%',
-                            width: `${pct * 100}%`,
-                            background: t.color,
-                            transition: 'width 0.3s',
-                          }} />
-                        </div>
+                        {/* Inline log controls — log without leaving the dashboard.
+                            Daylio's "2-tap" principle. */}
+                        {t.type === 'select' && opts.length > 0 ? (
+                          <div data-flat style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            {opts.map((opt, i) => {
+                              const optVal = i + 1
+                              const selected = v === optVal
+                              return (
+                                <button
+                                  key={i}
+                                  onClick={() => setTodayValue(t.uid, selected ? 0 : optVal)}
+                                  title={opt}
+                                  style={{
+                                    width: '26px', height: '26px',
+                                    borderRadius: '6px',
+                                    border: selected ? `2px solid ${t.color}` : '1px solid var(--border)',
+                                    background: selected ? `${t.color}18` : 'var(--bg-secondary)',
+                                    cursor: 'pointer', fontSize: '14px', padding: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  }}
+                                >{opt}</button>
+                              )
+                            })}
+                          </div>
+                        ) : t.type === 'habit' ? (
+                          <button
+                            onClick={() => {
+                              if (v > 0) addLog(t.uid, -v)
+                              else addLog(t.uid, 1)
+                            }}
+                            data-no-sculpt
+                            style={{
+                              padding: '4px 12px', borderRadius: '9999px',
+                              border: `1px solid ${t.color}`,
+                              background: v > 0 ? t.color : 'transparent',
+                              color: v > 0 ? '#fff' : t.color,
+                              fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                            }}
+                          >{v > 0 ? '✓ Done' : 'Mark done'}</button>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button
+                              onClick={() => { if (v > 0) addLog(t.uid, -1) }}
+                              data-no-sculpt
+                              style={{
+                                width: '22px', height: '22px', borderRadius: '50%',
+                                border: '1px solid var(--border)', background: 'none',
+                                cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: 0,
+                              }}
+                            >−</button>
+                            <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: 'var(--bg-hover)', overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%', width: `${pct * 100}%`,
+                                background: t.color, transition: 'width 0.3s',
+                              }} />
+                            </div>
+                            <button
+                              onClick={() => addLog(t.uid, 1)}
+                              data-no-sculpt
+                              style={{
+                                width: '22px', height: '22px', borderRadius: '50%',
+                                border: 'none', background: t.color,
+                                cursor: 'pointer', fontSize: '14px', color: '#fff',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: 0,
+                              }}
+                            >+</button>
+                          </div>
+                        )}
                       </li>
                     )
                   })}

@@ -180,18 +180,6 @@ export default function TrackerGrid() {
 
   return (
     <div>
-      <div data-flat style={{
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'flex-end', marginBottom: '16px'
-      }}>
-        <button onClick={() => setShowAdd(true)} style={{
-          padding: '5px 12px', borderRadius: 'var(--radius-base, 8px)',
-          border: '1px solid var(--border)',
-          background: 'transparent', color: 'var(--text-secondary)',
-          fontSize: '12px', cursor: 'pointer'
-        }}>+ Add</button>
-      </div>
-
       {/* Daily Progress selection */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>
@@ -271,6 +259,34 @@ export default function TrackerGrid() {
             onLogValue={(val: number) => setTodayValue(tracker.uid, val)}
           />
         ))}
+        {/* Single canonical "+" — appears as a tile at the end of the grid
+            so it sits exactly where the user looks when they want to add. */}
+        <button
+          onClick={() => setShowAdd(true)}
+          data-no-sculpt
+          style={{
+            padding: '20px',
+            borderRadius: 'var(--radius-card, 12px)',
+            border: '1.5px dashed var(--border)',
+            background: 'transparent', cursor: 'pointer',
+            color: 'var(--text-tertiary)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            minHeight: '180px', gap: '6px',
+            transition: 'border-color 0.15s, color 0.15s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'var(--accent)'
+            e.currentTarget.style.color = 'var(--accent)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'var(--border)'
+            e.currentTarget.style.color = 'var(--text-tertiary)'
+          }}
+        >
+          <span style={{ fontSize: '24px', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: '12px', fontWeight: 500 }}>New tracker</span>
+        </button>
       </div>
         </SortableContext>
         <DragOverlay>
@@ -989,29 +1005,75 @@ function EditTrackerModal({ tracker, onClose, onSave, onDelete }: {
   )
 }
 
+// Common-tracker templates — one click to populate the form. Mirrors the
+// seedIfEmpty defaults so deleted seed trackers can be restored without
+// manual setup. Daylio/Streaks ship a similar gallery.
+type TrackerTemplate = {
+  name: string
+  icon: string
+  unit: string
+  target: number
+  color: string
+  type: 'counter' | 'value' | 'habit' | 'select'
+  options?: string[]
+}
+const TRACKER_TEMPLATES: TrackerTemplate[] = [
+  { name: 'Water',       icon: 'droplets',  unit: 'cups',   target: 8,    color: '#3B82F6', type: 'counter' },
+  { name: 'Sleep',       icon: 'moon',      unit: 'hours',  target: 8,    color: '#8B5CF6', type: 'value' },
+  { name: 'Exercise',    icon: 'activity',  unit: 'min',    target: 30,   color: '#EF4444', type: 'value' },
+  { name: 'Steps',       icon: 'footprints',unit: 'steps',  target: 10000,color: '#F59E0B', type: 'value' },
+  { name: 'Reading',     icon: 'book',      unit: 'pages',  target: 20,   color: '#A855F7', type: 'value' },
+  { name: 'Mood',        icon: 'smile',     unit: '',       target: 0,    color: '#EC4899', type: 'select', options: ['😢','😕','😐','🙂','😊'] },
+  { name: 'Energy',      icon: 'zap',       unit: '',       target: 0,    color: '#F59E0B', type: 'select', options: ['1','2','3','4','5'] },
+  { name: 'Meditation',  icon: 'wind',      unit: 'min',    target: 15,   color: '#14B8A6', type: 'value' },
+  { name: 'Journaling',  icon: 'pencil',    unit: '',       target: 1,    color: '#6366F1', type: 'habit' },
+  { name: 'No Caffeine', icon: 'coffee',    unit: '',       target: 1,    color: '#78716C', type: 'habit' },
+]
+
 function AddTrackerModal({ onClose }: { onClose: () => void }) {
   const addDefinition = useTrackerStore(s => s.addDefinition)
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('droplets')
   const [unit, setUnit] = useState('')
   const [target, setTarget] = useState(1)
-  const [type, setType] = useState<'counter' | 'value' | 'habit'>('counter')
+  const [type, setType] = useState<'counter' | 'value' | 'habit' | 'select'>('counter')
   const [color, setColor] = useState('#3B82F6')
+  const [selectOptions, setSelectOptions] = useState<string>('😢, 😕, 😐, 🙂, 😊')
 
   const colors = [
     '#3B82F6', '#EF4444', '#22C55E', '#F59E0B',
     '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1', '#78716C'
   ]
 
-  const TYPE_OPTIONS: { value: 'counter' | 'value' | 'habit'; label: string; desc: string }[] = [
-    { value: 'counter', label: 'Counter', desc: '+/- buttons' },
-    { value: 'value', label: 'Value', desc: 'manual entry' },
-    { value: 'habit', label: 'Habit', desc: 'yes / no' },
+  // Sensible default-target per type so users don't start with a confusing
+  // 0/1 baseline (C1 in the friction checklist).
+  function applyTypeDefaults(next: typeof type) {
+    setType(next)
+    if (next === 'habit')        setTarget(1)
+    else if (next === 'counter') { if (target === 0) setTarget(8) }
+    else if (next === 'value')   { if (target === 0) setTarget(30) }
+    else if (next === 'select')  setTarget(0) // mood has no goal
+  }
+
+  function applyTemplate(t: TrackerTemplate) {
+    setName(t.name); setIcon(t.icon); setUnit(t.unit); setTarget(t.target)
+    setColor(t.color); setType(t.type)
+    if (t.options) setSelectOptions(t.options.join(', '))
+  }
+
+  const TYPE_OPTIONS: { value: 'counter' | 'value' | 'habit' | 'select'; label: string; desc: string; preview: string }[] = [
+    { value: 'counter', label: 'Counter', desc: '+ / − buttons',     preview: '−  3  +' },
+    { value: 'value',   label: 'Value',   desc: 'enter a number',    preview: '30 min' },
+    { value: 'habit',   label: 'Habit',   desc: 'done / not done',   preview: '✓ Done' },
+    { value: 'select',  label: 'Scale',   desc: 'pick from options', preview: '😢 😕 😐 🙂 😊' },
   ]
 
   async function handleCreate() {
     if (!name.trim()) return
-    await addDefinition({ name, icon, unit, target, color, type, options: null, notes: null })
+    const options = type === 'select'
+      ? JSON.stringify(selectOptions.split(',').map(s => s.trim()).filter(Boolean))
+      : null
+    await addDefinition({ name, icon, unit, target, color, type, options, notes: null })
     onClose()
   }
 
@@ -1034,9 +1096,31 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
           border: '1px solid var(--border)'
         }}
       >
-        <h3 style={{ margin: '0 0 20px', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
           New Tracker
         </h3>
+
+        {/* Templates — one click to populate the rest of the form. Reduces
+            blank-canvas friction; restores deleted seed trackers. */}
+        <div data-flat style={{ marginBottom: '20px' }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)',
+            letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px'
+          }}>Start from a template</div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {TRACKER_TEMPLATES.map(t => (
+              <button
+                key={t.name}
+                onClick={() => applyTemplate(t)}
+                style={{
+                  padding: '4px 10px', borderRadius: '9999px',
+                  border: '1px solid var(--border)', background: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)', fontSize: '11px', cursor: 'pointer',
+                }}
+              >{t.name}</button>
+            ))}
+          </div>
+        </div>
 
         {/* Icon picker */}
         <div style={{ marginBottom: '16px' }}>
@@ -1103,31 +1187,64 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
             letterSpacing: '0.06em', textTransform: 'uppercase',
             display: 'block', marginBottom: '8px'
           }}>Type</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          {/* Type cards — visual preview per Streaks pattern (C3). 2x2 grid. */}
+          <div data-flat style={{
+            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px',
+          }}>
             {TYPE_OPTIONS.map(opt => (
               <button
                 key={opt.value}
-                onClick={() => setType(opt.value)}
+                onClick={() => applyTypeDefaults(opt.value)}
                 style={{
-                  flex: 1, padding: '8px 4px', borderRadius: 'var(--radius-base, 8px)',
+                  padding: '10px 12px', borderRadius: 'var(--radius-base, 8px)',
                   border: type === opt.value ? `2px solid ${color}` : '1px solid var(--border)',
-                  background: type === opt.value ? `${color}18` : 'transparent',
-                  cursor: 'pointer', textAlign: 'center', transition: 'all 0.1s'
+                  background: type === opt.value ? `${color}18` : 'var(--bg-secondary)',
+                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s',
                 }}
               >
-                <div style={{ fontSize: '12px', fontWeight: 600, color: type === opt.value ? color : 'var(--text-primary)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: type === opt.value ? color : 'var(--text-primary)' }}>
                   {opt.label}
                 </div>
                 <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                   {opt.desc}
                 </div>
+                <div style={{
+                  marginTop: '8px', fontSize: '11px',
+                  color: type === opt.value ? color : 'var(--text-tertiary)',
+                  fontFamily: 'ui-monospace, monospace',
+                }}>{opt.preview}</div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Target + Unit */}
-        {type !== 'habit' && (
+        {/* Scale options — only when type === 'select' */}
+        {type === 'select' && (
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{
+              fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              display: 'block', marginBottom: '8px'
+            }}>Scale options (comma-separated)</label>
+            <input
+              value={selectOptions}
+              onChange={e => setSelectOptions(e.target.value)}
+              placeholder="😢, 😕, 😐, 🙂, 😊"
+              style={{
+                width: '100%', padding: '8px 0', border: 'none',
+                borderBottom: '2px solid var(--border)',
+                background: 'transparent', color: 'var(--text-primary)',
+                fontSize: '14px', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+              Try emoji (😢 😕 😐 🙂 😊) or numbers (1, 2, 3, 4, 5).
+            </div>
+          </div>
+        )}
+
+        {/* Target + Unit — hidden for habit (no quantity) and select (no goal) */}
+        {type !== 'habit' && type !== 'select' && (
           <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
             <div style={{ width: '80px' }}>
               <label style={{
