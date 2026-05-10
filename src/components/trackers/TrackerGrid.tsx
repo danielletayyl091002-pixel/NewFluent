@@ -112,6 +112,26 @@ export default function TrackerGrid() {
   const [editTracker, setEditTracker] = useState<TrackerDefinition | null>(null)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const [ringUids, setRingUids] = useState<string[]>([])
+  // Undo-delete: snapshot the deleted tracker + its logs and offer a
+  // 6-second window to bring it back. Auto-clears on timeout.
+  const [undo, setUndo] = useState<{ def: TrackerDefinition; logs: TrackerLog[]; expires: number } | null>(null)
+  useEffect(() => {
+    if (!undo) return
+    const remaining = undo.expires - Date.now()
+    const t = setTimeout(() => setUndo(null), Math.max(0, remaining))
+    return () => clearTimeout(t)
+  }, [undo])
+  async function performUndo() {
+    if (!undo) return
+    // Re-add the def with its original UID + logs so any pinned-tracker
+    // settings still resolve.
+    const { def, logs: oldLogs } = undo
+    const restored: TrackerDefinition = { ...def, id: undefined }
+    await db.trackerDefinitions.add(restored)
+    if (oldLogs.length > 0) await db.trackerLogs.bulkAdd(oldLogs.map(l => ({ ...l, id: undefined })))
+    await load() // refresh the store
+    setUndo(null)
+  }
 
   useEffect(() => {
     async function loadRingPref() {
@@ -180,10 +200,13 @@ export default function TrackerGrid() {
 
   return (
     <div>
-      {/* Daily Progress selection */}
+      {/* Pin trackers to the dashboard's Today's Trackers section.
+          Renamed from "Daily Progress" — was confusing alongside the
+          dashboard which now ALSO shows pinned trackers and lets users
+          log them inline. */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Daily Progress (pick up to 3)
+          Pin to dashboard <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-tertiary)' }}>(up to 3)</span>
         </div>
         <div data-flat style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {definitions.map(t => {
@@ -310,6 +333,23 @@ export default function TrackerGrid() {
           tracker with shared logged days. */}
       <MoodCorrelations definitions={definitions} logs={logs} />
 
+      {undo && (
+        <div role="status" style={{
+          position: 'fixed', bottom: '20px', left: '50%',
+          transform: 'translateX(-50%)', zIndex: 9000,
+          padding: '10px 16px', borderRadius: '9999px',
+          background: 'var(--text-primary)', color: 'var(--bg-primary)',
+          fontSize: '13px', display: 'flex', alignItems: 'center', gap: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+        }}>
+          <span>Deleted "{undo.def.name}"</span>
+          <button onClick={performUndo} style={{
+            background: 'none', border: 'none', color: 'var(--accent)',
+            fontWeight: 700, cursor: 'pointer', fontSize: '13px',
+          }}>Undo</button>
+        </div>
+      )}
+
       {activeTracker && (
         <TrackerLogModal
           tracker={activeTracker}
@@ -328,8 +368,12 @@ export default function TrackerGrid() {
             setEditTracker(null)
           }}
           onDelete={async () => {
-            await deleteDefinition(editTracker.uid)
+            // Snapshot the def + its logs so the toast can restore.
+            const def = editTracker
+            const defLogs = logs.filter(l => l.trackerUid === def.uid)
+            await deleteDefinition(def.uid)
             setEditTracker(null)
+            setUndo({ def, logs: defLogs, expires: Date.now() + 6000 })
           }}
         />
       )}

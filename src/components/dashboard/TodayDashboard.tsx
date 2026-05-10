@@ -88,6 +88,25 @@ export default function TodayDashboard() {
     [pages]
   )
 
+  // Unscheduled tasks (no scheduledDate set OR set to a date before today
+  // and still open). The "Plan today" CTA pulls these into a quick list
+  // so users can drag them into today in one place — Sunsama ritual.
+  const unscheduledTasks = useMemo(
+    () => tasks.filter(t =>
+      t.status !== 'done' &&
+      t.itemType !== 'event' &&
+      (!t.scheduledDate || t.scheduledDate < today)
+    ).slice(0, 12),
+    [tasks, today]
+  )
+  const [planOpen, setPlanOpen] = useState(false)
+  async function moveToToday(uid: string) {
+    const t = tasks.find(x => x.uid === uid)
+    if (!t?.id) return
+    await db.tasks.update(t.id, { scheduledDate: today, dueDate: today })
+    setTasks(prev => prev.map(x => x.uid === uid ? { ...x, scheduledDate: today, dueDate: today } : x))
+  }
+
   const ringedTrackers = useMemo(
     () => ringedUids
       .map(uid => trackers.find(t => t.uid === uid))
@@ -99,6 +118,33 @@ export default function TodayDashboard() {
   const eventCount = todaysEvents.length
   const taskOpenCount = todaysTasks.filter(t => t.status !== 'done').length
   const taskDoneCount = todaysTasks.filter(t => t.status === 'done').length
+
+  // Weekly recap — only show on weekends (review window). Counts events
+  // closed, tasks done, and average mood (if a select tracker exists).
+  const showWeeklyRecap = now.getDay() === 0 || now.getDay() === 6
+  const weeklyStats = useMemo(() => {
+    if (!showWeeklyRecap) return null
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7)
+    const weekAgoStr = weekAgo.toISOString().split('T')[0]
+    const inWeek = (d?: string | null) => Boolean(d && d >= weekAgoStr && d <= today)
+    const tasksThisWeek = tasks.filter(t => inWeek(t.scheduledDate) || inWeek(t.dueDate))
+    const tasksDone = tasksThisWeek.filter(t => t.status === 'done').length
+    const events = tasksThisWeek.filter(t => t.itemType === 'event').length
+    // Mood
+    const moodTracker = trackers.find(t => t.type === 'select')
+    let moodAvg: number | null = null
+    let moodLabel: string | null = null
+    if (moodTracker) {
+      const moodLogs = trackerLogs.filter(l => l.trackerUid === moodTracker.uid && l.date >= weekAgoStr && l.value > 0)
+      if (moodLogs.length > 0) {
+        moodAvg = moodLogs.reduce((s, l) => s + l.value, 0) / moodLogs.length
+        const opts: string[] = (() => { try { return JSON.parse(moodTracker.options || '[]') } catch { return [] } })()
+        moodLabel = opts[Math.round(moodAvg) - 1] || moodAvg.toFixed(1)
+      }
+    }
+    return { tasksDone, events, moodLabel, moodLogged: moodTracker ? trackerLogs.filter(l => l.trackerUid === moodTracker.uid && l.date >= weekAgoStr && l.value > 0).length : 0 }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWeeklyRecap, tasks, trackers, trackerLogs, today])
 
   return (
     <div className="dashboard-root" style={{
@@ -136,6 +182,32 @@ export default function TodayDashboard() {
           <KPI label="Events" value={String(eventCount)} hint={eventCount === 1 ? 'scheduled today' : 'scheduled today'} />
           <KPI label="Tasks open" value={String(taskOpenCount)} hint={taskDoneCount > 0 ? `${taskDoneCount} done today` : 'nothing due'} />
         </section>
+
+        {/* Weekly recap — only on weekends so users get a built-in review
+            moment without it cluttering weekday dashboards. */}
+        {weeklyStats && (
+          <section style={{
+            marginBottom: '24px',
+            padding: '16px 20px',
+            borderRadius: 'var(--radius-card, 12px)',
+            background: 'var(--accent-light)',
+            border: '1px solid var(--accent)',
+            color: 'var(--text-primary)',
+          }}>
+            <div style={{
+              fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+              textTransform: 'uppercase', color: 'var(--accent)',
+              marginBottom: '6px',
+            }}>This week</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', fontSize: '13px' }}>
+              <span><strong>{weeklyStats.tasksDone}</strong> tasks done</span>
+              <span><strong>{weeklyStats.events}</strong> events</span>
+              {weeklyStats.moodLabel && (
+                <span>Avg mood: <strong>{weeklyStats.moodLabel}</strong> ({weeklyStats.moodLogged} logs)</span>
+              )}
+            </div>
+          </section>
+        )}
 
         <div className="dashboard-grid">
           {/* Primary column: today's schedule */}
@@ -177,6 +249,21 @@ export default function TodayDashboard() {
             </Section>
 
             <Section title="Tasks" actionHref="/board" actionLabel="Open board">
+              {/* Sunsama-style "plan today" — pull from backlog without
+                  leaving the dashboard. Only renders when there's a backlog. */}
+              {unscheduledTasks.length > 0 && (
+                <button
+                  onClick={() => setPlanOpen(true)}
+                  data-no-sculpt
+                  style={{
+                    width: '100%', padding: '8px 12px',
+                    marginBottom: '10px', borderRadius: 'var(--radius-base, 8px)',
+                    border: '1px dashed var(--accent)',
+                    background: 'transparent', color: 'var(--accent)',
+                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  }}
+                >Plan today — {unscheduledTasks.length} {unscheduledTasks.length === 1 ? 'task' : 'tasks'} need a date</button>
+              )}
               {todaysTasks.length === 0 ? (
                 <Empty
                   message="No tasks for today."
@@ -356,6 +443,69 @@ export default function TodayDashboard() {
           {' '}<kbd style={kbdStyle}>⌘</kbd>+<kbd style={kbdStyle}>⇧</kbd>+<kbd style={kbdStyle}>N</kbd> for quick capture
         </p>
       </div>
+
+      {planOpen && (
+        <div onClick={() => setPlanOpen(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 4000,
+          background: 'rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          paddingTop: '10vh',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border)',
+            borderRadius: '14px', width: '480px', maxWidth: '90vw',
+            maxHeight: '70vh', overflowY: 'auto',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{
+              padding: '16px 20px', borderBottom: '1px solid var(--border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>Plan today</h3>
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                Click to schedule for today
+              </span>
+            </div>
+            <ul style={{ listStyle: 'none', margin: 0, padding: '8px 0' }}>
+              {unscheduledTasks.length === 0 ? (
+                <li style={{ padding: '24px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                  Inbox zero. Nothing to plan.
+                </li>
+              ) : unscheduledTasks.map(t => (
+                <li key={t.uid}
+                  onClick={() => moveToToday(t.uid)}
+                  style={{
+                    padding: '10px 20px', cursor: 'pointer',
+                    fontSize: '13px', color: 'var(--text-primary)',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span style={{
+                    width: '12px', height: '12px', borderRadius: '50%',
+                    border: `1.5px solid ${t.color || 'var(--accent)'}`, flexShrink: 0,
+                  }} />
+                  <span style={{ flex: 1 }}>{t.title || 'Untitled'}</span>
+                  {t.scheduledDate && (
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                      was {t.scheduledDate}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setPlanOpen(false)} style={{
+                padding: '6px 14px', borderRadius: '6px',
+                border: '1px solid var(--border)', background: 'none',
+                color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer',
+              }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
