@@ -306,22 +306,26 @@ export default function BoardView({ pageUid }: { pageUid: string }) {
                       fontSize: '13px', boxSizing: 'border-box'
                     }}
                   />
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
                     <button onClick={() => addTask(col.id)} style={{
-                      padding: '4px 12px', borderRadius: 'var(--radius-sm, 6px)',
+                      padding: '6px 16px', borderRadius: 'var(--radius-sm, 6px)',
                       border: 'none', background: 'var(--accent)',
-                      color: 'white', fontSize: '12px', cursor: 'pointer'
-                    }}>Add</button>
+                      color: 'white', fontSize: '12px', fontWeight: 600,
+                      cursor: 'pointer', flex: 1,
+                    }}>Add task</button>
                     <button onClick={() => {
                       setAddingTo(null)
                       setNewTaskTitle('')
                     }} style={{
-                      padding: '4px 12px', borderRadius: 'var(--radius-sm, 6px)',
+                      padding: '6px 12px', borderRadius: 'var(--radius-sm, 6px)',
                       border: '1px solid var(--border)',
                       background: 'none',
                       color: 'var(--text-secondary)',
                       fontSize: '12px', cursor: 'pointer'
                     }}>Cancel</button>
+                  </div>
+                  <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--text-tertiary)' }}>
+                    Press Enter to add · Esc to cancel
                   </div>
                 </div>
               ) : (

@@ -607,6 +607,43 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
             }}
           >+</button>
         </div>
+      ) : tracker.type === 'select' && tracker.options ? (
+        // Inline emoji picker — every other tracker type has a clickable
+        // affordance on the card; select used to be inert plain text.
+        // Click an option to log; click the same again to clear.
+        (() => {
+          const opts: string[] = (() => { try { return JSON.parse(tracker.options!) } catch { return [] } })()
+          return (
+            <div data-flat style={{ display: 'flex', gap: '4px', marginBottom: '10px', flexWrap: 'wrap' }}>
+              {opts.map((opt, i) => {
+                const optVal = i + 1
+                const selected = todayValue === optVal
+                return (
+                  <button
+                    key={i}
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => {
+                      e.stopPropagation()
+                      onLogValue(selected ? 0 : optVal)
+                    }}
+                    title={opt}
+                    style={{
+                      width: '30px', height: '30px',
+                      borderRadius: '8px',
+                      border: selected ? `2px solid ${tracker.color}` : '1px solid var(--border)',
+                      background: selected ? `${tracker.color}18` : 'var(--bg-secondary)',
+                      cursor: 'pointer', fontSize: '17px', padding: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'transform 0.1s, border-color 0.1s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                  >{opt}</button>
+                )
+              })}
+            </div>
+          )
+        })()
       ) : (
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '10px' }}>
           <span style={{

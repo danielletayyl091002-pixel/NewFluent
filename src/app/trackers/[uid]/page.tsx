@@ -521,6 +521,14 @@ export default function TrackerDetailPage() {
                     <input
                       value={logNotes[dateStr] ?? ''}
                       onChange={e => setLogNotes(p => ({ ...p, [dateStr]: e.target.value }))}
+                      onKeyDown={async e => {
+                        if (e.key === 'Enter') {
+                          // Save the note alongside whatever's in the value input.
+                          const v = parseFloat(logInputs[dateStr] || '')
+                          if (!isNaN(v) && v > 0) await logForDate(dateStr)
+                          ;(e.target as HTMLInputElement).blur()
+                        }
+                      }}
                       placeholder="Add note..."
                       style={{
                         flex: 1, padding: '4px 8px', borderRadius: '6px',

@@ -87,11 +87,23 @@ function ToggleView({ node, updateAttributes }: any) {
           <span
             contentEditable={false}
             onClick={toggle}
+            role="button"
+            aria-label={open ? 'Collapse toggle' : 'Expand toggle'}
+            title={open ? 'Click to collapse' : 'Click to expand'}
             style={{
-              cursor: 'pointer', userSelect: 'none', fontSize: '11px',
-              color: 'var(--text-tertiary)', flexShrink: 0, width: '36px', height: '24px',
+              cursor: 'pointer', userSelect: 'none', fontSize: '12px',
+              color: 'var(--text-secondary)', flexShrink: 0, width: '36px', height: '24px',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              marginLeft: 0, paddingLeft: 0,
+              marginLeft: 0, paddingLeft: 0, borderRadius: '4px',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLSpanElement).style.background = 'var(--bg-hover)'
+              ;(e.currentTarget as HTMLSpanElement).style.color = 'var(--text-primary)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLSpanElement).style.background = 'transparent'
+              ;(e.currentTarget as HTMLSpanElement).style.color = 'var(--text-secondary)'
             }}
           >{open ? '\u25BC' : '\u25B6'}</span>
           <input

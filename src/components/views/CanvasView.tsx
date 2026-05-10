@@ -615,6 +615,10 @@ export default function CanvasView({ pageUid }: { pageUid: string }) {
               onMouseEnter={() => setHoveredUid(item.uid)}
               onMouseLeave={() => setHoveredUid(null)}
               onClick={(e) => { e.stopPropagation(); setSelectedUid(item.uid) }}
+              // Touch devices: explicit tap-select so the floating chrome
+              // (drag handle + delete) becomes visible — `:hover` doesn't
+              // exist on touch, so without selection the toolbar stays hidden.
+              onTouchStart={(e) => { e.stopPropagation(); setSelectedUid(item.uid) }}
               style={{
                 position: 'absolute',
                 left: `${item.x}px`,

@@ -74,7 +74,11 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
           display: 'flex', justifyContent: 'flex-end',
           gap: '8px', marginTop: '12px', paddingTop: '12px',
           borderTop: '0.5px solid var(--border)',
+          alignItems: 'center',
         }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginRight: 'auto' }}>
+            Press Enter to create · Esc to cancel
+          </span>
           <button onClick={onClose} style={{
             padding: '6px 14px', background: 'none',
             border: '1px solid var(--border)', borderRadius: '6px',

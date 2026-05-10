@@ -106,6 +106,12 @@ export const useTrackerStore = create<TrackerState>((set, get) => ({
     for (const log of todayLogs) {
       if (log.id) await db.trackerLogs.delete(log.id)
     }
+    // value === 0 means clear (no log for today). Used by mood toggle:
+    // clicking the same emoji again removes the log.
+    if (value === 0) {
+      set({ logs: get().logs.filter(l => !(l.trackerUid === trackerUid && l.date === today)) })
+      return
+    }
     const newLog: TrackerLog = {
       trackerUid, value, note,
       date: today,

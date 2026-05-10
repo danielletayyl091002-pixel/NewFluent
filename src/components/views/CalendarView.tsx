@@ -222,6 +222,19 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
     return () => window.removeEventListener('keydown', onKey)
   }, [weekDays, todayStr])
 
+  // Floating-button create — listen for the event the outer FAB dispatches.
+  useEffect(() => {
+    function onCreate(e: Event) {
+      const detail = (e as CustomEvent).detail || {}
+      // Snap the requested date into the current week if it's outside.
+      const inWeek = weekDays.some(d => d.toISOString().split('T')[0] === detail.date)
+      const dateStr = inWeek ? detail.date : weekDays[0].toISOString().split('T')[0]
+      setModalDefaults({ date: dateStr, start: detail.start || '09:00', end: detail.end || '10:00' })
+    }
+    window.addEventListener('calendar-create-event', onCreate)
+    return () => window.removeEventListener('calendar-create-event', onCreate)
+  }, [weekDays])
+
   // Get column index and hour from mouse event on the grid
   function getColAndHour(e: React.MouseEvent | MouseEvent): {
     dateStr: string; hour: number
@@ -1862,6 +1875,43 @@ export default function CalendarView({
             setDayModalDefaults(null)
           }}
         />
+      )}
+
+      {/* Floating "+" — universal click path to create an event. The drag-
+          to-create flow doesn't work on touch devices and the 'n' shortcut
+          is keyboard-only; this gives mobile + new-user discoverability. */}
+      {(viewMode === 'week' || viewMode === 'day') && (
+        <button
+          data-no-sculpt
+          onClick={() => {
+            const dateStr = currentDate.toISOString().split('T')[0]
+            // Default to "next hour" so the slot lands somewhere useful
+            const next = new Date()
+            const start = `${String(next.getHours()).padStart(2, '0')}:00`
+            const end = `${String(Math.min(23, next.getHours() + 1)).padStart(2, '0')}:00`
+            if (viewMode === 'day') {
+              setDayModalDefaults({ date: dateStr, start, end })
+            } else {
+              // Dispatch a window event WeekView listens for (its
+              // setModalDefaults is internal to that subcomponent).
+              window.dispatchEvent(new CustomEvent('calendar-create-event', {
+                detail: { date: dateStr, start, end },
+              }))
+            }
+          }}
+          aria-label="Create event"
+          style={{
+            position: 'fixed',
+            right: '24px', bottom: '24px',
+            zIndex: 50,
+            width: '52px', height: '52px', borderRadius: '50%',
+            border: 'none', background: 'var(--accent)', color: '#fff',
+            fontSize: '24px', fontWeight: 400, cursor: 'pointer',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.10)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1, paddingBottom: '4px',
+          }}
+        >+</button>
       )}
     </div>
   )

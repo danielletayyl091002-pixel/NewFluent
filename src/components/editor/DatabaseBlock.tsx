@@ -39,6 +39,7 @@ export default function DatabaseBlock({ databaseUid, pageUid }: DatabaseBlockPro
   const [aggs, setAggs] = useState<Record<string, AggType>>({})
   const [typePickerCol, setTypePickerCol] = useState<string | null>(null)
   const [hoveredCol, setHoveredCol] = useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const typePickerRef = useRef<HTMLDivElement>(null)
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
@@ -105,12 +106,16 @@ export default function DatabaseBlock({ databaseUid, pageUid }: DatabaseBlockPro
       if (existing) return prev.map(c => c.rowUid === rowUid && c.columnUid === columnUid ? { ...c, value } : c)
       return [...prev, { uid: nanoid(), rowUid, columnUid, value }]
     })
+    setSaveStatus('saving')
     const key = `${rowUid}-${columnUid}`
     clearTimeout(saveTimers.current[key])
     saveTimers.current[key] = setTimeout(async () => {
       const existing = await db.databaseCells.where({ rowUid, columnUid }).first()
       if (existing?.id) await db.databaseCells.update(existing.id, { value })
       else await db.databaseCells.add({ uid: nanoid(), rowUid, columnUid, value })
+      setSaveStatus('saved')
+      // Hide the "saved" pip after a moment so it doesn't camp on screen
+      setTimeout(() => setSaveStatus(prev => prev === 'saved' ? 'idle' : prev), 1500)
     }, 300)
   }, [])
 
@@ -233,6 +238,20 @@ export default function DatabaseBlock({ databaseUid, pageUid }: DatabaseBlockPro
       }}>
         <input value={dbName} onChange={e => setDbName(e.target.value)} onBlur={e => updateDbName(e.target.value)}
           style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', flex: 1, padding: '2px 0' }} />
+        {saveStatus !== 'idle' && (
+          <span style={{
+            fontSize: '11px',
+            color: saveStatus === 'saving' ? 'var(--text-tertiary)' : 'var(--accent)',
+            display: 'flex', alignItems: 'center', gap: '4px',
+            transition: 'opacity 0.2s',
+          }}>
+            <span aria-hidden style={{
+              width: '6px', height: '6px', borderRadius: '50%',
+              background: saveStatus === 'saving' ? 'var(--text-tertiary)' : 'var(--accent)',
+            }} />
+            {saveStatus === 'saving' ? 'Saving…' : 'Saved'}
+          </span>
+        )}
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
           style={{ padding: '5px 10px', borderRadius: 'var(--radius-base, 6px)', border: '1px solid var(--border)', background: 'var(--bg-primary)', fontSize: '12px', color: 'var(--text-primary)', outline: 'none', width: '160px' }} />
         <button onClick={addColumn} style={{ padding: '5px 12px', borderRadius: 'var(--radius-base, 6px)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>+ Column</button>
