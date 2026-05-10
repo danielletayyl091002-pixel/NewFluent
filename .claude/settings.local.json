@@ -21,7 +21,8 @@
       "Bash(git push *)",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Empty states + active states + cross-app CmdK search' -m 'C — Empty states \\(Eleken/Mobbin pattern: branded look, plain message, one CTA, teach what belongs\\): *)",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Fix interaction failures: mood inline log, calendar FAB, save indicators, polish' -m 'Blockers: *)",
-      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Weekly recap, Plan-today modal, undo-delete toast, useUiPref hook' -m 'A5 — Weekly recap card on the dashboard, only renders Saturday/Sunday. Counts tasks done, events held, and average mood \\(when a select tracker exists\\) over the last 7 days. *)"
+      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Weekly recap, Plan-today modal, undo-delete toast, useUiPref hook' -m 'A5 — Weekly recap card on the dashboard, only renders Saturday/Sunday. Counts tasks done, events held, and average mood \\(when a select tracker exists\\) over the last 7 days. *)",
+      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Dashboard: tag sections + KPIs as cards; show ALL trackers, drop 3-cap' -m 'Sculpt fix — Section and KPI components now render with data-card so they pick up sculpt-l3 elevation on the dashboard. Previously the dashboard was the only main page with no sculpt depth. *)"
     ]
   }
 }

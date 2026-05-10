@@ -200,27 +200,25 @@ export default function TrackerGrid() {
 
   return (
     <div>
-      {/* Pin trackers to the dashboard's Today's Trackers section.
-          Renamed from "Daily Progress" — was confusing alongside the
-          dashboard which now ALSO shows pinned trackers and lets users
-          log them inline. */}
+      {/* Pin to dashboard. The dashboard now shows ALL trackers (research:
+          Habitify/HabitNow pattern) and the pinned ones get a subtle
+          accent highlight — so the "limit" is gone and the chip becomes
+          a soft preference, not a gate. */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Pin to dashboard <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-tertiary)' }}>(up to 3)</span>
+          Highlight on dashboard <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-tertiary)' }}>(your top focus)</span>
         </div>
         <div data-flat style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {definitions.map(t => {
             const isSelected = ringUids.includes(t.uid)
-            const atLimit = ringUids.length >= 3 && !isSelected
             return (
               <button
                 key={t.uid}
                 onPointerDown={e => e.stopPropagation()}
                 onClick={async () => {
-                  let next: string[]
-                  if (isSelected) next = ringUids.filter(u => u !== t.uid)
-                  else if (!atLimit) next = [...ringUids, t.uid]
-                  else return
+                  const next = isSelected
+                    ? ringUids.filter(u => u !== t.uid)
+                    : [...ringUids, t.uid]
                   setRingUids(next)
                   const val = JSON.stringify(next)
                   const exist = await db.settings.where('key').equals('daily_progress_trackers').first()
@@ -231,9 +229,9 @@ export default function TrackerGrid() {
                   padding: '4px 12px', borderRadius: '16px',
                   border: isSelected ? `2px solid ${t.color}` : '1px solid var(--border)',
                   background: isSelected ? `${t.color}18` : 'transparent',
-                  color: isSelected ? t.color : atLimit ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                  fontSize: '11px', fontWeight: 500, cursor: atLimit ? 'not-allowed' : 'pointer',
-                  opacity: atLimit ? 0.5 : 1, transition: 'all 0.1s'
+                  color: isSelected ? t.color : 'var(--text-secondary)',
+                  fontSize: '11px', fontWeight: 500, cursor: 'pointer',
+                  transition: 'all 0.1s'
                 }}
               >
                 {t.name}

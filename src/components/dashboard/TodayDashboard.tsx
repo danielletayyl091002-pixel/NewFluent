@@ -107,12 +107,20 @@ export default function TodayDashboard() {
     setTasks(prev => prev.map(x => x.uid === uid ? { ...x, scheduledDate: today, dueDate: today } : x))
   }
 
-  const ringedTrackers = useMemo(
-    () => ringedUids
+  // Show ALL trackers, pinned ones first. Research-backed approach
+  // (Habitify / HabitNow): the dashboard should expose every tracker
+  // for one-tap logging, not hide them. James Clear's "focus on 3"
+  // principle is honored visually — pinned trackers get the accent
+  // border treatment, but unpinned ones still appear so the section
+  // never feels arbitrary or wasteful.
+  const dashboardTrackers = useMemo(() => {
+    const pinnedSet = new Set(ringedUids)
+    const pinned = ringedUids
       .map(uid => trackers.find(t => t.uid === uid))
-      .filter((t): t is NonNullable<typeof t> => Boolean(t)),
-    [ringedUids, trackers]
-  )
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+    const rest = trackers.filter(t => !pinnedSet.has(t.uid))
+    return { all: [...pinned, ...rest], pinnedSet }
+  }, [ringedUids, trackers])
 
   // KPI counts for the headline strip
   const eventCount = todaysEvents.length
@@ -300,21 +308,30 @@ export default function TodayDashboard() {
           {/* Side column: trackers + recent pages */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <Section title="Today's trackers" actionHref="/trackers" actionLabel="All trackers">
-              {ringedTrackers.length === 0 ? (
+              {dashboardTrackers.all.length === 0 ? (
                 <Empty
-                  message="No trackers pinned."
-                  cta="Pin up to 3 from the Trackers page to see daily progress here"
+                  message="No trackers yet."
+                  cta="Add a tracker to log mood, habits, or daily counts here"
                 />
               ) : (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {ringedTrackers.map(t => {
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {dashboardTrackers.all.map(t => {
+                    const isPinned = dashboardTrackers.pinnedSet.has(t.uid)
+                    void isPinned // pinned styling applied via the wrapper below
                     const v = getTodayValue(t.uid)
                     const pct = t.target > 0 ? Math.min(v / t.target, 1) : 0
                     const opts: string[] = t.type === 'select' && t.options
                       ? (() => { try { return JSON.parse(t.options!) } catch { return [] } })()
                       : []
                     return (
-                      <li key={t.uid} style={{ padding: '6px 4px' }}>
+                      <li key={t.uid} style={{
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        // Pinned trackers: subtle accent left-bar so they
+                        // visually anchor the eye without crowding the list.
+                        borderLeft: isPinned ? `3px solid ${t.color}` : '3px solid transparent',
+                        background: isPinned ? `${t.color}08` : 'transparent',
+                      }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', marginBottom: '6px' }}>
                           <span
                             onClick={() => router.push(`/trackers/${t.uid}`)}
@@ -512,7 +529,7 @@ export default function TodayDashboard() {
 
 function KPI({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div style={{
+    <div data-card style={{
       padding: '14px 16px',
       borderRadius: 'var(--radius-card, 12px)',
       background: 'var(--bg-secondary)',
@@ -542,7 +559,7 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section style={{
+    <section data-card style={{
       borderRadius: 'var(--radius-card, 12px)',
       background: 'var(--bg-primary)',
       border: '1px solid var(--border)',
