@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { db } from '@/db/schema'
-import { ChevronLeft, Menu } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import LeftSidebar from '@/components/layout/LeftSidebar'
 import RightRail from '@/components/layout/RightRail'
 import CmdK from '@/components/CmdK'
@@ -280,12 +280,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             </div>
           </>
         )
-      ) : (
+      ) : leftVisible ? (
         <LeftSidebar
-          collapsed={!leftVisible}
+          collapsed={false}
           toggleLeft={toggleLeft}
           refreshKey={sidebarRefreshKey}
         />
+      ) : null}
+
+      {/* Floating left-edge expand tab — symmetric with the right one. */}
+      {!isMobile && !leftVisible && (
+        <button
+          onClick={toggleLeft}
+          aria-label="Show left sidebar"
+          className="rail-toggle rail-toggle-left"
+        >
+          <ChevronRight size={16} />
+        </button>
       )}
 
       <main style={{
@@ -341,21 +352,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <button
           onClick={toggleRight}
           aria-label="Show right sidebar"
-          style={{
-            position: 'fixed',
-            right: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 100,
-            background: 'var(--bg-primary)',
-            border: '1px solid var(--border)',
-            borderRadius: '6px',
-            padding: '6px',
-            cursor: 'pointer',
-            color: 'var(--text-tertiary)',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className="rail-toggle rail-toggle-right"
         >
           <ChevronLeft size={16} />
         </button>

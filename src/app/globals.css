@@ -730,6 +730,55 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 [data-density="comfortable"] { --spacing-base: 1; --density-padding: 12px; --density-gap: 12px; --density-section: 40px; }
 [data-density="relaxed"] { --spacing-base: 1.35; --density-padding: 20px; --density-gap: 20px; --density-section: 56px; }
 
+/* ─── Rail toggle tabs ───
+   Symmetric edge tabs that show when a sidebar is hidden. Both sides
+   share the same shape, size, position, hover behavior — reading as
+   a clear "click to expand" affordance regardless of which edge they
+   sit on. Half-pill shape: rounded on the inward edge only, so the
+   tab visually attaches to the screen edge. */
+.rail-toggle {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  width: 22px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.rail-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.rail-toggle-left {
+  left: 0;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+.rail-toggle-right {
+  right: 0;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+}
+.rail-toggle-left:hover  { transform: translateY(-50%) translateX(2px); }
+.rail-toggle-right:hover { transform: translateY(-50%) translateX(-2px); }
+
+[data-style="sculpt"] .rail-toggle {
+  border-color: rgba(0,0,0,0.04) !important;
+  box-shadow: var(--sculpt-l3) !important;
+}
+[data-style="sculpt"] .rail-toggle:hover {
+  box-shadow: var(--sculpt-l4) !important;
+}
+
 .has-bg-image { position: relative; }
 .has-bg-image::before {
   content: '';
