@@ -101,7 +101,7 @@ export default function TodayDashboard() {
   const taskDoneCount = todaysTasks.filter(t => t.status === 'done').length
 
   return (
-    <div style={{
+    <div className="dashboard-root" style={{
       flex: 1, height: '100vh', overflowY: 'auto',
       background: 'var(--bg-primary)',
     }}>
@@ -116,9 +116,8 @@ export default function TodayDashboard() {
           }}>
             {dateLabel}
           </div>
-          <h1 style={{
-            margin: 0,
-            fontSize: '28px', fontWeight: 700,
+          <h1 className="dashboard-greeting" style={{
+            margin: 0, fontWeight: 700,
             color: 'var(--text-primary)',
             lineHeight: 1.2,
           }}>
@@ -126,26 +125,19 @@ export default function TodayDashboard() {
           </h1>
         </header>
 
-        {/* KPI strip */}
+        {/* KPI strip — only the two action-relevant counts on the
+            dashboard. Pages/Trackers totals were noise (visible from the
+            sidebar). On mobile this collapses to two larger tiles. */}
         <section
           aria-label="Today at a glance"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-            gap: '12px', marginBottom: '32px',
-          }}
+          className="dashboard-kpi"
+          style={{ marginBottom: '24px' }}
         >
-          <KPI label="Events" value={String(eventCount)} hint="today" />
-          <KPI label="Tasks open" value={String(taskOpenCount)} hint={taskDoneCount > 0 ? `${taskDoneCount} done` : undefined} />
-          <KPI label="Pages" value={String(pages.length)} hint="in workspace" />
-          <KPI label="Trackers" value={String(trackers.length)} hint="active" />
+          <KPI label="Events" value={String(eventCount)} hint={eventCount === 1 ? 'scheduled today' : 'scheduled today'} />
+          <KPI label="Tasks open" value={String(taskOpenCount)} hint={taskDoneCount > 0 ? `${taskDoneCount} done today` : 'nothing due'} />
         </section>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
-          gap: '24px',
-        }}>
+        <div className="dashboard-grid">
           {/* Primary column: today's schedule */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <Section title="Today's schedule" actionHref="/page/calendar" actionLabel="Open calendar">
@@ -286,14 +278,17 @@ export default function TodayDashboard() {
               )}
             </Section>
 
-            <Section title="Quick add" actionHref={undefined}>
-              <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
-                Press <kbd style={kbdStyle}>⌘</kbd>+<kbd style={kbdStyle}>K</kbd> for the command palette
-                or <kbd style={kbdStyle}>⌘</kbd>+<kbd style={kbdStyle}>⇧</kbd>+<kbd style={kbdStyle}>N</kbd> for quick capture.
-              </p>
-            </Section>
           </div>
         </div>
+
+        {/* Footer hint — small, single-line, hidden on mobile to avoid clutter */}
+        <p className="dashboard-footer-hint" style={{
+          margin: '24px 0 0', fontSize: '11px',
+          color: 'var(--text-tertiary)', textAlign: 'center',
+        }}>
+          <kbd style={kbdStyle}>⌘</kbd>+<kbd style={kbdStyle}>K</kbd> to search ·
+          {' '}<kbd style={kbdStyle}>⌘</kbd>+<kbd style={kbdStyle}>⇧</kbd>+<kbd style={kbdStyle}>N</kbd> for quick capture
+        </p>
       </div>
     </div>
   )

@@ -527,6 +527,29 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 .finance-shell { padding: 32px 40px; }
 @media (max-width: 768px) { .finance-shell { padding: 20px 16px; } }
 @media (max-width: 480px) { .finance-shell { padding: 16px 12px; } }
+
+/* Dashboard responsiveness — KPI strip + main 2-col grid both
+   collapse on narrow viewports so nothing gets squeezed. */
+.dashboard-kpi {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.dashboard-greeting { font-size: 28px; }
+@media (max-width: 768px) {
+  .dashboard-grid { grid-template-columns: 1fr; gap: 16px; }
+  .dashboard-footer-hint { display: none; }
+  .dashboard-greeting { font-size: 22px; }
+}
+@media (max-width: 480px) {
+  .dashboard-kpi { gap: 8px; }
+  .dashboard-greeting { font-size: 20px; }
+}
 [data-style="sculpt"] aside button:not([data-no-sculpt]):hover,
 [data-style="sculpt"] nav button:not([data-no-sculpt]):hover {
   background: var(--bg-hover) !important;
