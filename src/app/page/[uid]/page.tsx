@@ -138,28 +138,31 @@ export default function PageCanvas() {
 
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)', position: 'relative' }}>
-      {/* Focus-mode toggle — floats at top-right so it's reachable in both
-          normal and focus mode. Press F to toggle from the keyboard. */}
+      {/* Focus-mode toggle — floats inside the page content (top-right of
+          the editor's max-width column, not the viewport edge) so it never
+          collides with the right rail's edge tab. Press F to toggle. */}
       <button
         onClick={toggleFocus}
         data-no-sculpt
-        title={focusMode ? 'Show page header (F)' : 'Focus mode — hide header (F)'}
-        aria-label={focusMode ? 'Show page header' : 'Enter focus mode'}
+        title={focusMode ? 'Exit focus mode (F)' : 'Focus mode — hide header (F)'}
+        aria-label={focusMode ? 'Exit focus mode' : 'Enter focus mode'}
         style={{
-          position: 'fixed',
+          position: 'absolute',
           top: '16px', right: '16px',
-          zIndex: 30,
-          width: '32px', height: '32px',
-          borderRadius: '50%',
+          zIndex: 5,
+          padding: '4px 10px', height: '28px',
+          borderRadius: '6px',
           border: '1px solid var(--border)',
-          background: 'var(--bg-primary)',
-          color: 'var(--text-tertiary)',
+          background: focusMode ? 'var(--accent)' : 'var(--bg-primary)',
+          color: focusMode ? '#fff' : 'var(--text-secondary)',
           cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '14px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+          fontSize: '11px', fontWeight: 600,
         }}
-      >{focusMode ? '⤢' : '⤡'}</button>
+      >
+        <span aria-hidden style={{ fontSize: '13px' }}>{focusMode ? '✕' : '⛶'}</span>
+        <span>{focusMode ? 'Exit focus' : 'Focus'}</span>
+      </button>
 
       <div className="page-shell" style={{
         maxWidth: focusMode ? '760px' : '720px',
