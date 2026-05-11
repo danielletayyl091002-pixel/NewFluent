@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
 
@@ -12,6 +12,10 @@ export const metadata: Metadata = {
     title: "Fluent",
     statusBarStyle: "default",
   },
+};
+
+// Next 16 moved themeColor to viewport export (Metadata.themeColor is deprecated).
+export const viewport: Viewport = {
   themeColor: "#3B82F6",
 };
 

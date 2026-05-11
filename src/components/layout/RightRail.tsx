@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid'
 import { expandRecurring } from '@/lib/expandRecurring'
 import { safeDbWrite } from '@/lib/dbError'
 import { formatHourLabel, formatHourDecimal, formatTimeString } from '@/lib/timeFormat'
+import { useDroppable } from '@dnd-kit/core'
 
 const getEventColor = (task: Task) => task.color || 'var(--accent)'
 
@@ -30,6 +31,37 @@ import { useTrackerStore } from '@/stores/trackers'
 
 // Full 24h timetable: 12 AM (0) through 11 PM (23).
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
+
+// Hour cell that accepts a dropped task (cross-app drag from the dashboard
+// or board). Drop ID format: cal:YYYY-MM-DD:H — ClientLayout's onDragEnd
+// parses this and writes scheduledDate/startTime/endTime to the task.
+function DroppableHour({ hour, HOUR_H }: { hour: number; HOUR_H: number }) {
+  const todayStr = new Date().toISOString().split('T')[0]
+  const { setNodeRef, isOver } = useDroppable({ id: `cal:${todayStr}:${hour}` })
+  return (
+    <div
+      ref={setNodeRef}
+      data-drop-hour={hour}
+      style={{
+        height: `${HOUR_H}px`,
+        borderBottom: '1px solid var(--border-light, #F1F5F9)',
+        display: 'flex', alignItems: 'flex-start',
+        position: 'relative',
+        background: isOver ? 'var(--accent-light)' : 'transparent',
+        outline: isOver ? '2px solid var(--accent)' : 'none',
+        outlineOffset: '-2px',
+        transition: 'background 0.1s',
+      }}
+    >
+      <span style={{
+        fontSize: '11px', color: 'var(--text-tertiary)',
+        width: '52px', paddingTop: '4px',
+        paddingLeft: '8px', flexShrink: 0,
+        whiteSpace: 'nowrap'
+      }}>{formatHourLabel(hour)}</span>
+    </div>
+  )
+}
 
 function WeekStrip({ today, onDayClick, selectedDay }: {
   today: Date
@@ -254,21 +286,7 @@ function Timeline({ now, tasks, onAddEvent, onUpdateTask, onEventClick }: {
       }}
     >
       {HOURS.map(h => (
-        <div key={h}
-          style={{
-            height: `${HOUR_H}px`,
-            borderBottom: '1px solid var(--border-light, #F1F5F9)',
-            display: 'flex', alignItems: 'flex-start',
-            position: 'relative'
-          }}
-        >
-          <span style={{
-            fontSize: '11px', color: 'var(--text-tertiary)',
-            width: '52px', paddingTop: '4px',
-            paddingLeft: '8px', flexShrink: 0,
-            whiteSpace: 'nowrap'
-          }}>{formatHourLabel(h)}</span>
-        </div>
+        <DroppableHour key={h} hour={h} HOUR_H={HOUR_H} />
       ))}
 
       {tasks.length === 0 && (

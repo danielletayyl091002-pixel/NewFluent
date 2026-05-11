@@ -12,6 +12,10 @@ import ErrorToast from '@/components/ui/ErrorToast'
 import { useSidebarVisibility } from '@/hooks/useSidebarVisibility'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { registerErrorHandler } from '@/lib/dbError'
+import {
+  DndContext, DragOverlay, PointerSensor, TouchSensor,
+  useSensor, useSensors, DragStartEvent, DragEndEvent,
+} from '@dnd-kit/core'
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { leftVisible, rightVisible, toggleLeft, toggleRight } = useSidebarVisibility()
@@ -22,6 +26,46 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isMobile = useIsMobile()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dbError, setDbError] = useState<string | null>(null)
+  // Cross-app drag (task → calendar slot). dnd-kit context lifted to the
+  // layout so dashboard tasks can be dropped on the right rail timeline,
+  // and board tasks can be dropped on the right rail too. Nested DndContext
+  // inside BoardView still works for sortable card reordering — events
+  // bubble correctly.
+  const [activeDragTaskUid, setActiveDragTaskUid] = useState<string | null>(null)
+  const [dragGhostTitle, setDragGhostTitle] = useState<string>('')
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor,   { activationConstraint: { delay: 250, tolerance: 5 } }),
+  )
+  function handleDragStart(e: DragStartEvent) {
+    const id = String(e.active.id)
+    if (!id.startsWith('task:')) return
+    setActiveDragTaskUid(id.slice(5))
+    setDragGhostTitle(String(e.active.data.current?.title || 'Task'))
+  }
+  async function handleDragEnd(e: DragEndEvent) {
+    setActiveDragTaskUid(null); setDragGhostTitle('')
+    const activeId = String(e.active.id)
+    const overId = e.over ? String(e.over.id) : null
+    if (!activeId.startsWith('task:') || !overId || !overId.startsWith('cal:')) return
+    const taskUid = activeId.slice(5)
+    // overId format: cal:YYYY-MM-DD:H  (H is integer hour)
+    const [, dateStr, hourStr] = overId.split(':')
+    const hour = Number(hourStr)
+    if (isNaN(hour)) return
+    const startTime = `${String(hour).padStart(2, '0')}:00`
+    const endTime = `${String(Math.min(23, hour + 1)).padStart(2, '0')}:00`
+    await db.tasks.where('uid').equals(taskUid).modify({
+      scheduledDate: dateStr,
+      dueDate: dateStr,
+      startTime, endTime,
+      itemType: 'event', // promote so it renders on the calendar
+    })
+    // Notify any open calendar / right rail to refresh
+    window.dispatchEvent(new CustomEvent('task-scheduled', {
+      detail: { uid: taskUid, dateStr, startTime, endTime },
+    }))
+  }
 
   // Wire the global Dexie-error reporter to a toast in this layout.
   // Any call to reportDbError() / safeDbWrite() from anywhere in the
@@ -244,6 +288,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, [])
 
   return (
+    <DndContext
+      sensors={dndSensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
     <div style={{
       display: 'flex',
       height: '100vh',
@@ -387,5 +436,21 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         />
       )}
     </div>
+
+    {/* Floating ghost while a task is being dragged across panes. */}
+    <DragOverlay>
+      {activeDragTaskUid ? (
+        <div style={{
+          padding: '8px 14px', borderRadius: '8px',
+          background: 'var(--bg-primary)', color: 'var(--text-primary)',
+          border: '1px solid var(--accent)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+          fontSize: '13px', fontWeight: 500,
+          maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap', cursor: 'grabbing',
+        }}>{dragGhostTitle}</div>
+      ) : null}
+    </DragOverlay>
+    </DndContext>
   )
 }

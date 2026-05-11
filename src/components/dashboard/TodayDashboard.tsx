@@ -21,6 +21,7 @@ import { expandRecurring } from '@/lib/expandRecurring'
 import { formatTimeString } from '@/lib/timeFormat'
 import TrackerRing from './TrackerRing'
 import { generateReview, ReviewOutput } from '@/lib/aiReview'
+import { useDraggable } from '@dnd-kit/core'
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]
@@ -53,7 +54,14 @@ export default function TodayDashboard() {
   useEffect(() => { loadPages(); loadTrackers() }, [loadPages, loadTrackers])
 
   useEffect(() => {
-    db.tasks.toArray().then(all => setTasks(all.filter(t => t.scheduledDate || t.dueDate)))
+    async function refresh() {
+      const all = await db.tasks.toArray()
+      setTasks(all.filter(t => t.scheduledDate || t.dueDate))
+    }
+    refresh()
+    // Re-load when ClientLayout's drag handler schedules a task.
+    window.addEventListener('task-scheduled', refresh)
+    return () => window.removeEventListener('task-scheduled', refresh)
   }, [])
 
   useEffect(() => {
@@ -413,29 +421,17 @@ export default function TodayDashboard() {
                   cta="Create a task on the board, or use ⌘⇧N for a quick capture"
                 />
               ) : (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {todaysTasks.map(t => (
-                    <li key={t.uid} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-base, 8px)',
-                    }}>
-                      <span aria-hidden style={{
-                        width: '14px', height: '14px',
-                        borderRadius: '50%', flexShrink: 0,
-                        border: `1.5px solid ${t.color || 'var(--accent)'}`,
-                        background: t.status === 'done' ? (t.color || 'var(--accent)') : 'transparent',
-                      }} />
-                      <span style={{
-                        fontSize: '13px',
-                        color: t.status === 'done' ? 'var(--text-tertiary)' : 'var(--text-primary)',
-                        textDecoration: t.status === 'done' ? 'line-through' : 'none',
-                      }}>
-                        {t.title || 'Untitled task'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {todaysTasks.map(t => (
+                      <DraggableTask key={t.uid} task={t} />
+                    ))}
+                  </ul>
+                  <p style={{
+                    margin: '8px 0 0', fontSize: '11px',
+                    color: 'var(--text-tertiary)',
+                  }}>Tip: drag any task onto the right-rail timeline to schedule it.</p>
+                </>
               )}
             </Section>
           </div>
@@ -636,4 +632,51 @@ const kbdStyle: React.CSSProperties = {
   border: '1px solid var(--border)',
   color: 'var(--text-secondary)',
   fontWeight: 600,
+}
+
+// Draggable wrapper for a task <li>. The drag id 'task:<uid>' is parsed
+// by ClientLayout's onDragEnd; the data.current carries the title for
+// the floating ghost.
+function DraggableTask({ task }: { task: Task }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `task:${task.uid}`,
+    data: { title: task.title || 'Untitled task' },
+  })
+  return (
+    <li
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        padding: '8px 12px',
+        borderRadius: 'var(--radius-base, 8px)',
+        cursor: 'grab',
+        opacity: isDragging ? 0.4 : 1,
+        background: 'transparent',
+        transition: 'opacity 0.15s, background 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      <span aria-hidden style={{
+        width: '14px', height: '14px',
+        borderRadius: '50%', flexShrink: 0,
+        border: `1.5px solid ${task.color || 'var(--accent)'}`,
+        background: task.status === 'done' ? (task.color || 'var(--accent)') : 'transparent',
+      }} />
+      <span style={{
+        fontSize: '13px',
+        color: task.status === 'done' ? 'var(--text-tertiary)' : 'var(--text-primary)',
+        textDecoration: task.status === 'done' ? 'line-through' : 'none',
+        flex: 1,
+      }}>
+        {task.title || 'Untitled task'}
+      </span>
+      <span aria-hidden style={{
+        fontSize: '13px', color: 'var(--text-tertiary)',
+        opacity: 0.4, cursor: 'grab',
+      }}>⋮⋮</span>
+    </li>
+  )
 }
