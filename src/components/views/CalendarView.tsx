@@ -477,7 +477,9 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
                 fontWeight: isToday ? 700 : 400,
                 textTransform: 'uppercase', letterSpacing: '0.05em'
               }}>
-                {DAYS_SHORT[i]}
+                {/* Label by the actual date's weekday so monday-start renders
+                    Mon/Tue/.../Sun rather than Sun-first hardcoded labels. */}
+                {DAYS_SHORT[d.getDay()]}
               </div>
               <div style={{
                 display: 'inline-flex', width: '28px', height: '28px',
@@ -1225,7 +1227,11 @@ export default function CalendarView({
   }, [])
 
   const calendarDays = useMemo(() => {
-    const firstDay = new Date(year, month, 1).getDay()
+    // For monday-start, shift the offset: Sun=6 instead of Sun=0, Mon=0, etc.
+    const rawFirstDay = new Date(year, month, 1).getDay()
+    const firstDay = calWeekStart === 'monday'
+      ? (rawFirstDay + 6) % 7
+      : rawFirstDay
     const daysInMonth = new Date(year, month + 1, 0).getDate()
     const daysInPrevMonth = new Date(year, month, 0).getDate()
 
@@ -1267,7 +1273,7 @@ export default function CalendarView({
     }
 
     return days
-  }, [year, month])
+  }, [year, month, calWeekStart])
 
   // Expand recurring events for the visible month
   const expandedMonthTasks = useMemo(() => {
@@ -1440,7 +1446,10 @@ export default function CalendarView({
           gridTemplateColumns: 'repeat(7, 1fr)',
           gap: '1px', marginBottom: '4px'
         }}>
-          {DAYS.map(d => (
+          {(calWeekStart === 'monday'
+            ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+            : DAYS
+          ).map(d => (
             <div key={d} style={{
               textAlign: 'center', fontSize: '11px',
               fontWeight: 600, color: 'var(--text-tertiary)',
