@@ -320,6 +320,7 @@ export default function TodayDashboard() {
             Sits above the 2-col grid because tracking is a daily ritual
             that benefits from being scanned first. */}
         {dashboardTrackers.all.length > 0 && (
+          <div data-tour="trackers-section">
           <Section title="Today's trackers" actionHref="/trackers" actionLabel="All trackers">
             <div style={{
               // Rule-of-thirds × N. Min 72px per ring + gap means ~8-9
@@ -360,6 +361,7 @@ export default function TodayDashboard() {
               })}
             </div>
           </Section>
+          </div>
         )}
 
         <div className="dashboard-grid" style={{ marginTop: '24px' }}>
@@ -401,6 +403,7 @@ export default function TodayDashboard() {
               )}
             </Section>
 
+            <div data-tour="tasks-section">
             <Section title="Tasks" actionHref="/board" actionLabel="Open board">
               {/* Sunsama-style "plan today" — pull from backlog without
                   leaving the dashboard. Only renders when there's a backlog. */}
@@ -454,6 +457,7 @@ export default function TodayDashboard() {
                 </>
               )}
             </Section>
+            </div>
           </div>
 
           {/* Side column: recent pages (trackers now live in a full-width

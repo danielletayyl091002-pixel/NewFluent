@@ -8,6 +8,7 @@ import CmdK from '@/components/CmdK'
 import ShortcutsModal from '@/components/ui/ShortcutsModal'
 import QuickCapture from '@/components/ui/QuickCapture'
 import OnboardingModal from '@/components/ui/OnboardingModal'
+import Tour from '@/components/ui/Tour'
 import ErrorToast from '@/components/ui/ErrorToast'
 import { useSidebarVisibility } from '@/hooks/useSidebarVisibility'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -23,6 +24,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [showQuickCapture, setShowQuickCapture] = useState(false)
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showTour, setShowTour] = useState(false)
   const isMobile = useIsMobile()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dbError, setDbError] = useState<string | null>(null)
@@ -92,6 +94,24 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     }
     checkOnboarding()
   }, [])
+
+  // Tour: after onboarding completes (or for existing users who already
+  // have onboarding_complete=true but never saw the tour), run the
+  // interactive Tour once. Skipped if tour_complete is already set.
+  useEffect(() => {
+    if (showOnboarding) return  // wait until the welcome modal closes
+    const check = async () => {
+      const tourDone = await db.settings.where('key').equals('tour_complete').first()
+      if (tourDone) return
+      // Only show the tour on the dashboard — it points at dashboard elements.
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') return
+      setShowTour(true)
+    }
+    // Slight delay so the dashboard has time to mount and the
+    // [data-tour] anchors are in the DOM before the tour reads them.
+    const t = setTimeout(check, 600)
+    return () => clearTimeout(t)
+  }, [showOnboarding])
 
   // Global keydown — Cmd+? toggles shortcuts, Cmd+Shift+N opens quick capture
   useEffect(() => {
@@ -435,6 +455,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           onDismiss={() => setDbError(null)}
         />
       )}
+
+      {showTour && <Tour onClose={() => setShowTour(false)} />}
     </div>
 
     {/* Floating ghost while a task is being dragged across panes. */}
