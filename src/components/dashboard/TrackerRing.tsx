@@ -78,17 +78,29 @@ export default function TrackerRing({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onTap}
+      onKeyDown={e => {
+        // Keyboard reach: Enter or Space activates the same tap action.
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onTap()
+        }
+      }}
+      aria-label={`${tracker.name}, ${
+        tracker.type === 'habit' ? (todayValue > 0 ? 'done' : 'mark done')
+        : tracker.type === 'select' ? (todayValue > 0 ? 'logged' : 'cycle scale')
+        : `${todayValue}${tracker.target > 0 ? ` of ${tracker.target}` : ''} logged today, tap to add 1`
+      }${streak >= 3 ? `, ${streak} day streak` : ''}`}
       title={`${tracker.name} — tap to log${streak >= 3 ? ` · ${streak}d streak` : ''}`}
       style={{
         position: 'relative',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         gap: '6px',
-        // Rule-of-thirds tile: square outer footprint with negative space.
         padding: '8px 4px',
         borderRadius: '10px',
         cursor: 'pointer',
-        // 10% accent: pinned tiles get a soft tracker-tinted ring around the cell
         background: pinned ? `${tracker.color}0E` : 'transparent',
         border: pinned ? `1px solid ${tracker.color}40` : '1px solid transparent',
         transition: 'transform 0.1s, background 0.15s',

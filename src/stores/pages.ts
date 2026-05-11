@@ -11,6 +11,7 @@ interface PagesState {
   createPage: (overrides?: Partial<Omit<Page, 'id' | 'order' | 'createdAt' | 'updatedAt'>>) => Promise<Page>
   updatePage: (uid: string, updates: Partial<Page>) => Promise<void>
   deletePage: (uid: string) => Promise<void>
+  restorePage: (uid: string) => Promise<void>
 }
 
 const now = () => new Date().toISOString()
@@ -70,5 +71,15 @@ export const usePagesStore = create<PagesState>((set, get) => ({
     if (!page?.id) return
     await db.pages.update(page.id, { inTrash: true, updatedAt: now() })
     set({ pages: get().pages.filter(p => p.uid !== uid) })
+  },
+
+  async restorePage(uid) {
+    // Counterpart to deletePage — un-trashes by uid (Dexie row still exists
+    // because deletePage is a soft delete via inTrash flag).
+    const row = await db.pages.where('uid').equals(uid).first()
+    if (!row?.id) return
+    await db.pages.update(row.id, { inTrash: false, updatedAt: now() })
+    const refreshed = await loadPages()
+    set({ pages: refreshed })
   },
 }))

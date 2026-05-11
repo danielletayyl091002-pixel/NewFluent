@@ -107,10 +107,11 @@ export default function FinancePage() {
       backgroundAttachment: 'fixed',
     }}>
 
-      {/* HEADER */}
+      {/* HEADER — flex-wraps so the action row drops below the title on narrow */}
       <div style={{
         display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: '24px'
+        alignItems: 'center', marginBottom: '24px',
+        flexWrap: 'wrap', gap: '12px',
       }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700,
@@ -236,10 +237,11 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {/* MONTHLY SUMMARY GRID */}
+      {/* MONTHLY SUMMARY GRID — auto-fit so it gracefully drops to 3/2/1
+          columns on narrow viewports. */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '12px',
         marginBottom: '32px'
       }}>
@@ -303,10 +305,10 @@ export default function FinancePage() {
         />
       )}
 
-      {/* TWO COLUMN TABLES */}
+      {/* TWO COLUMN TABLES — stacks vertically on narrow viewports */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: '20px'
       }}>
         <FinanceTable

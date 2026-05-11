@@ -28,6 +28,13 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
   const refreshPages = usePagesStore(s => s.refresh)
   const createPageInStore = usePagesStore(s => s.createPage)
   const deletePageInStore = usePagesStore(s => s.deletePage)
+  const restorePageInStore = usePagesStore(s => s.restorePage)
+  const [pageUndo, setPageUndo] = useState<{ uid: string; title: string; expires: number } | null>(null)
+  useEffect(() => {
+    if (!pageUndo) return
+    const t = setTimeout(() => setPageUndo(null), Math.max(0, pageUndo.expires - Date.now()))
+    return () => clearTimeout(t)
+  }, [pageUndo])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -117,10 +124,12 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
           onClick={() => navigateTo(`/page/${page.uid}`)}
           onAddChild={() => createPage(page.uid)}
           onDelete={async () => {
+            const title = page.title || 'Untitled'
             await safeDbWrite(
               () => deletePageInStore(page.uid),
               'Failed to delete page. Please try again.'
             )
+            setPageUndo({ uid: page.uid, title, expires: Date.now() + 6000 })
           }}
         />
         {hasChildren && isExpanded && (
@@ -269,6 +278,25 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
           font-weight: 600;
         }
       `}</style>
+      {pageUndo && (
+        <div role="status" style={{
+          position: 'fixed', bottom: '20px', left: '50%',
+          transform: 'translateX(-50%)', zIndex: 9000,
+          padding: '10px 16px', borderRadius: '9999px',
+          background: 'var(--text-primary)', color: 'var(--bg-primary)',
+          fontSize: '13px', display: 'flex', alignItems: 'center', gap: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+        }}>
+          <span>Deleted &ldquo;{pageUndo.title}&rdquo;</span>
+          <button onClick={async () => {
+            await restorePageInStore(pageUndo.uid)
+            setPageUndo(null)
+          }} style={{
+            background: 'none', border: 'none', color: 'var(--accent)',
+            fontWeight: 700, cursor: 'pointer', fontSize: '13px',
+          }}>Undo</button>
+        </div>
+      )}
     </aside>
   )
 }

@@ -5,9 +5,10 @@ interface Props { onClose: () => void }
 
 const SHORTCUTS = [
   { category: 'Navigation', items: [
-    { keys: 'Cmd+K', action: 'Open command palette' },
+    { keys: 'Cmd+K', action: 'Open command palette · cross-app search' },
     { keys: 'Cmd+?', action: 'Show keyboard shortcuts' },
-    { keys: 'Cmd+Shift+N', action: 'Quick capture new page' },
+    { keys: 'Cmd+Shift+N', action: 'Quick capture (page / task / event)' },
+    { keys: 'Cmd+1 / 2 / 3', action: 'Switch quick-capture kind' },
   ]},
   { category: 'Editor', items: [
     { keys: '/', action: 'Open block menu' },
@@ -18,6 +19,13 @@ const SHORTCUTS = [
   ]},
   { category: 'Calendar', items: [
     { keys: 'T', action: 'Go to today' },
+    { keys: 'N', action: 'Create event at 9am today (week / day view)' },
+    { keys: 'Drag', action: 'Drag empty grid to create an event by time block' },
+    { keys: 'Click +', action: 'Floating + button (works on mobile/touch)' },
+  ]},
+  { category: 'Trackers', items: [
+    { keys: 'Tap ring', action: 'Log +1 / toggle / cycle mood' },
+    { keys: 'Click name', action: 'Open tracker detail' },
   ]},
 ]
 
