@@ -5,6 +5,14 @@ import ClientLayout from "./ClientLayout";
 export const metadata: Metadata = {
   title: "Fluent — Your Productivity System",
   description: "Pages, tasks, and finance in one place. Offline-first.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "Fluent",
+  appleWebApp: {
+    capable: true,
+    title: "Fluent",
+    statusBarStyle: "default",
+  },
+  themeColor: "#3B82F6",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

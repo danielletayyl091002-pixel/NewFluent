@@ -20,6 +20,7 @@ import { useTrackerStore } from '@/stores/trackers'
 import { expandRecurring } from '@/lib/expandRecurring'
 import { formatTimeString } from '@/lib/timeFormat'
 import TrackerRing from './TrackerRing'
+import { generateReview, ReviewOutput } from '@/lib/aiReview'
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]
@@ -115,6 +116,38 @@ export default function TodayDashboard() {
     [tasks, today]
   )
   const [planOpen, setPlanOpen] = useState(false)
+  // AI weekly review — bring-your-own-key. Stored in localStorage so it
+  // never leaves the device unless the user explicitly triggers a request.
+  const [aiReview, setAiReview] = useState<ReviewOutput | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+  async function runAiReview() {
+    const apiKey = typeof localStorage !== 'undefined' ? localStorage.getItem('anthropic_api_key') : null
+    if (!apiKey) {
+      const k = window.prompt('Paste your Anthropic API key (kept locally, never sent to a server):')
+      if (!k) return
+      localStorage.setItem('anthropic_api_key', k)
+    }
+    const key = localStorage.getItem('anthropic_api_key')!
+    setAiLoading(true); setAiError(null); setAiReview(null)
+    try {
+      const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7)
+      const ws = weekStart.toISOString().split('T')[0]
+      const inWeek = (d?: string | null) => Boolean(d && d >= ws && d <= today)
+      const tasksWeek = tasks.filter(t => inWeek(t.scheduledDate) || inWeek(t.dueDate))
+      const logsWeek = trackerLogs.filter(l => l.date >= ws && l.date <= today)
+      const finance = await db.financeEntries.where('date').between(ws, today, true, true).toArray()
+      const review = await generateReview({
+        weekStart: ws, weekEnd: today,
+        tasks: tasksWeek, trackers, trackerLogs: logsWeek, financeEntries: finance,
+      }, key)
+      setAiReview(review)
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setAiLoading(false)
+    }
+  }
   async function moveToToday(uid: string) {
     const t = tasks.find(x => x.uid === uid)
     if (!t?.id) return
@@ -222,13 +255,53 @@ export default function TodayDashboard() {
               textTransform: 'uppercase', color: 'var(--accent)',
               marginBottom: '6px',
             }}>This week</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', fontSize: '13px', alignItems: 'center' }}>
               <span><strong>{weeklyStats.tasksDone}</strong> tasks done</span>
               <span><strong>{weeklyStats.events}</strong> events</span>
               {weeklyStats.moodLabel && (
                 <span>Avg mood: <strong>{weeklyStats.moodLabel}</strong> ({weeklyStats.moodLogged} logs)</span>
               )}
+              <button
+                onClick={runAiReview}
+                disabled={aiLoading}
+                data-no-sculpt
+                style={{
+                  marginLeft: 'auto',
+                  padding: '4px 12px', borderRadius: '9999px',
+                  border: '1px solid var(--accent)', background: 'transparent',
+                  color: 'var(--accent)', fontSize: '11px', fontWeight: 600,
+                  cursor: aiLoading ? 'wait' : 'pointer',
+                }}
+              >{aiLoading ? 'Thinking…' : aiReview ? 'Regenerate AI insights' : '✨ AI insights'}</button>
             </div>
+            {aiError && (
+              <div role="alert" style={{
+                marginTop: '12px', padding: '10px 12px', borderRadius: '8px',
+                background: '#FEE2E2', border: '1px solid #FCA5A5',
+                color: '#7F1D1D', fontSize: '12px',
+              }}>{aiError}</div>
+            )}
+            {aiReview && (
+              <div style={{ marginTop: '14px', fontSize: '13px', lineHeight: 1.6 }}>
+                <p style={{ margin: '0 0 10px', color: 'var(--text-primary)' }}>{aiReview.summary}</p>
+                {aiReview.highlights.length > 0 && (
+                  <>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Highlights</div>
+                    <ul style={{ margin: '0 0 10px', paddingLeft: '20px' }}>
+                      {aiReview.highlights.map((h, i) => <li key={i} style={{ marginBottom: '2px' }}>{h}</li>)}
+                    </ul>
+                  </>
+                )}
+                {aiReview.suggestions.length > 0 && (
+                  <>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>For next week</div>
+                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                      {aiReview.suggestions.map((s, i) => <li key={i} style={{ marginBottom: '2px' }}>{s}</li>)}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )}
           </section>
         )}
 

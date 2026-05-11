@@ -393,6 +393,9 @@ function EditTaskModal({ task, onClose, onSave }: {
   const [status, setStatus] = useState(task.status)
   const [priority, setPriority] = useState<string>(task.priority || '')
   const [dueDate, setDueDate] = useState(task.dueDate || '')
+  // Recurrence — engine (lib/expandRecurring) already supports task-level
+  // recurrence; only UI was missing. iCal RRULE form: FREQ=DAILY etc.
+  const [recurrence, setRecurrence] = useState<string>(task.recurrence || '')
 
   return (
     <div onClick={onClose} style={{
@@ -452,6 +455,21 @@ function EditTaskModal({ task, onClose, onSave }: {
             color: 'var(--text-primary)', fontSize: '13px', outline: 'none', boxSizing: 'border-box'
           }} />
         </div>
+        <div style={{ marginBottom: '14px' }}>
+          <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Repeat</label>
+          <select value={recurrence} onChange={e => setRecurrence(e.target.value)} style={{
+            width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-base, 8px)',
+            border: '1px solid var(--border)', background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)', fontSize: '13px',
+          }}>
+            <option value="">Does not repeat</option>
+            <option value="FREQ=DAILY">Daily</option>
+            <option value="FREQ=WEEKLY">Weekly</option>
+            <option value="FREQ=MONTHLY">Monthly</option>
+            <option value="FREQ=YEARLY">Yearly</option>
+            <option value="FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR">Weekdays only</option>
+          </select>
+        </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button onClick={onClose} style={{
             padding: '8px 16px', borderRadius: 'var(--radius-base, 8px)',
@@ -461,7 +479,11 @@ function EditTaskModal({ task, onClose, onSave }: {
           <button onClick={() => onSave({
             title, status,
             priority: (priority || null) as Task['priority'],
-            dueDate: dueDate || null
+            dueDate: dueDate || null,
+            // scheduledDate must be set for the recurrence engine to fan
+            // out occurrences — fall back to dueDate if user only set that.
+            scheduledDate: dueDate || task.scheduledDate || null,
+            recurrence: recurrence || null,
           })} style={{
             padding: '8px 20px', borderRadius: 'var(--radius-base, 8px)', border: 'none',
             background: 'var(--accent)', color: 'white',

@@ -27,7 +27,8 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Dashboard: ring grid for trackers — Streaks pattern + Notion at-a-glance' -m 'Replaces the verbose stacked-list of trackers with a compact ring grid following Option A from the plan, refined with Notion-research touches and the 60-30-10 colour rule. *)",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Tier 1 + QoL: shortcuts, README, a11y, mobile finance, undo, error/loading' -m 'A — Shortcuts modal lists every shortcut shipped this round \\(calendar n, quick-capture kinds, ring tap, etc.\\). *)",
-      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Tier 2: settings polish, pin-from-dashboard star, .ics calendar export' -m 'E — Settings page uses .page-shell so padding/header scale to viewport; semantic <header> grouping with proper spacing. *)"
+      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Tier 2: settings polish, pin-from-dashboard star, .ics calendar export' -m 'E — Settings page uses .page-shell so padding/header scale to viewport; semantic <header> grouping with proper spacing. *)",
+      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Recurring tasks UI, PWA manifest, AI weekly review \\(BYOK\\), drag-to-calendar plan' -m 'H — Recurring tasks: BoardView edit modal now exposes a Repeat dropdown \\(Does not repeat / Daily / Weekly / Monthly / Yearly / Weekdays\\). Engine in lib/expandRecurring already supports task-level recurrence — only UI was missing. *)"
     ]
   }
 }
