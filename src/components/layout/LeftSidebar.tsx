@@ -289,8 +289,14 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
         }}>
           <span>Deleted &ldquo;{pageUndo.title}&rdquo;</span>
           <button onClick={async () => {
-            await restorePageInStore(pageUndo.uid)
-            setPageUndo(null)
+            // Snapshot the uid before clearing — pageUndo can be cleared
+            // by the timer mid-await, leaving the closure with a null.
+            const uid = pageUndo.uid
+            try {
+              await restorePageInStore(uid)
+            } finally {
+              setPageUndo(null)
+            }
           }} style={{
             background: 'none', border: 'none', color: 'var(--accent)',
             fontWeight: 700, cursor: 'pointer', fontSize: '13px',

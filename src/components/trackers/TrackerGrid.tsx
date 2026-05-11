@@ -863,6 +863,7 @@ function EditTrackerModal({ tracker, onClose, onSave, onDelete }: {
       }}
     >
       <div
+        data-modal
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--bg-primary)', borderRadius: '14px',
@@ -1134,6 +1135,7 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
+        data-modal
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--bg-primary)', borderRadius: '14px',

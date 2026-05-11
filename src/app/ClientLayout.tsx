@@ -57,12 +57,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     if (isNaN(hour)) return
     const startTime = `${String(hour).padStart(2, '0')}:00`
     const endTime = `${String(Math.min(23, hour + 1)).padStart(2, '0')}:00`
-    await db.tasks.where('uid').equals(taskUid).modify({
-      scheduledDate: dateStr,
-      dueDate: dateStr,
-      startTime, endTime,
-      itemType: 'event', // promote so it renders on the calendar
-    })
+    try {
+      await db.tasks.where('uid').equals(taskUid).modify({
+        scheduledDate: dateStr,
+        dueDate: dateStr,
+        startTime, endTime,
+        itemType: 'event', // promote so it renders on the calendar
+      })
+    } catch (err) {
+      console.error('Failed to schedule task via drag', err)
+      setDbError(err instanceof Error ? err.message : 'Could not schedule task')
+      return
+    }
     // Notify any open calendar / right rail to refresh
     window.dispatchEvent(new CustomEvent('task-scheduled', {
       detail: { uid: taskUid, dateStr, startTime, endTime },

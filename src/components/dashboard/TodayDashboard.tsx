@@ -512,7 +512,7 @@ export default function TodayDashboard() {
           display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
           paddingTop: '10vh',
         }}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div data-modal onClick={e => e.stopPropagation()} style={{
             background: 'var(--bg-primary)',
             border: '1px solid var(--border)',
             borderRadius: '14px', width: '480px', maxWidth: '90vw',

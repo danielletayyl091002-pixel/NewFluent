@@ -39,10 +39,13 @@ export default function TrackerRing({
   const progress = useMemo(() => {
     if (tracker.type === 'select' && tracker.options) {
       const opts: string[] = (() => { try { return JSON.parse(tracker.options!) } catch { return [] } })()
-      return opts.length > 0 ? Math.min(todayValue / opts.length, 1) : 0
+      // Bounds-clamp: stale data could have todayValue > opts.length if
+      // options were edited after a log was written.
+      const clamped = Math.max(0, Math.min(todayValue, opts.length))
+      return opts.length > 0 ? clamped / opts.length : 0
     }
     if (tracker.type === 'habit') return todayValue > 0 ? 1 : 0
-    if (tracker.target > 0) return Math.min(todayValue / tracker.target, 1)
+    if (tracker.target > 0) return Math.max(0, Math.min(todayValue / tracker.target, 1))
     return todayValue > 0 ? 0.5 : 0
   }, [tracker, todayValue])
 

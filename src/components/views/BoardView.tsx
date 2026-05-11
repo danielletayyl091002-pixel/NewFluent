@@ -403,7 +403,7 @@ function EditTaskModal({ task, onClose, onSave }: {
       background: 'rgba(0,0,0,0.4)',
       display: 'flex', alignItems: 'center', justifyContent: 'center'
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div data-modal onClick={e => e.stopPropagation()} style={{
         background: 'var(--bg-primary)', borderRadius: '14px',
         padding: '24px', width: '400px', maxWidth: '90vw',
         boxShadow: '0 16px 48px rgba(0,0,0,0.2)',

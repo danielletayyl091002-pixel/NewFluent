@@ -74,7 +74,19 @@ export function tasksToIcs(tasks: Task[], calendarName = 'Fluent'): string {
     if (e.recurrenceException) {
       try {
         const dates: string[] = JSON.parse(e.recurrenceException)
-        for (const ex of dates) lines.push(`EXDATE:${ex.replace(/-/g, '')}`)
+        for (const ex of dates) {
+          // RFC 5545: EXDATE must be either YYYYMMDD (DATE) or
+          // YYYYMMDDTHHMMSS (DATE-TIME). Detect on 'T' separator and
+          // strip non-digit chars from each side; fall back to all-day.
+          if (ex.includes('T')) {
+            const [d, t] = ex.split('T')
+            const datePart = d.replace(/-/g, '')
+            const timePart = t.replace(/[:.]/g, '').slice(0, 6)
+            lines.push(`EXDATE:${datePart}T${timePart}`)
+          } else {
+            lines.push(`EXDATE;VALUE=DATE:${ex.replace(/-/g, '')}`)
+          }
+        }
       } catch { /* noop */ }
     }
     lines.push('END:VEVENT')

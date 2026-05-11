@@ -31,6 +31,7 @@ export default function LinkedPagePicker({
       }}
     >
       <div
+        data-modal
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--bg-primary)',

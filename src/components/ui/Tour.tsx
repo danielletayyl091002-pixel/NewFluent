@@ -7,7 +7,7 @@
 // Persists completion to the Dexie settings table under 'tour_complete'.
 
 import { useEffect, useState, useLayoutEffect } from 'react'
-import { db } from '@/db/schema'
+import { saveSetting } from '@/lib/settingsDb'
 
 interface TourStep {
   // CSS selector for the element to highlight. null = full-screen card.
@@ -76,7 +76,9 @@ export default function Tour({ onClose }: Props) {
   }, [step, current.target])
 
   async function complete() {
-    await db.settings.add({ key: 'tour_complete', value: 'true' })
+    // saveSetting upserts — the older db.settings.add() would throw on
+    // a duplicate row if the user managed to fire complete() twice.
+    await saveSetting('tour_complete', 'true')
     onClose()
   }
 

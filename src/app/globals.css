@@ -689,13 +689,11 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
   isolation: isolate;
 }
 
-/* Modal / dialog inner panel. Any element marked with `data-modal`
-   OR carrying the convention modal-shadow (inline `0 16px 48px`)
-   gets the popover-level lift. The substring match catches all 9
-   existing modal panels in the codebase without each one needing a
-   data-attribute change. */
-[data-style="sculpt"] [data-modal],
-[data-style="sculpt"] [style*="0 16px 48px"] {
+/* Modal / dialog inner panel. The previous version matched any element
+   with a substring '0 16px 48px' anywhere in inline style, which also
+   caught the Tour tooltip and any other floating overlay using the same
+   shadow recipe. Restricted to elements explicitly marked [data-modal]. */
+[data-style="sculpt"] [data-modal] {
   border-radius: var(--radius-card) !important;
   box-shadow: var(--sculpt-l5) !important;
   border: var(--border-sculpt) !important;

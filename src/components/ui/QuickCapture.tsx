@@ -107,7 +107,7 @@ export default function QuickCapture({ onClose, onCreated }: Props) {
       display: 'flex', alignItems: 'flex-start',
       justifyContent: 'center', paddingTop: '20vh',
     }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
+      <div data-modal onClick={(e) => e.stopPropagation()} style={{
         background: 'var(--bg-primary)',
         border: '1px solid var(--border)',
         borderRadius: '12px', padding: '16px', width: '480px',
