@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { db } from '@/db/schema'
 import { PALETTES, FONT_GROUPS, GOOGLE_FONTS_URL } from '@/lib/settings-constants'
 import { saveSetting } from '@/lib/settingsDb'
+import { setUiPref } from '@/hooks/useUiPref'
 
 
 export default function SettingsPage() {
@@ -598,7 +599,9 @@ export default function SettingsPage() {
               <button
                 key={day}
                 onClick={() => {
-                  localStorage.setItem('week_start', day)
+                  // setUiPref writes localStorage AND fires `week_start-changed`
+                  // so every consumer using useUiPref reactively re-renders.
+                  setUiPref('week_start', day)
                   setWeekStart(day)
                 }}
                 style={{
@@ -620,7 +623,7 @@ export default function SettingsPage() {
             <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Time format</h2>
             <div style={{ display: 'flex', gap: '8px' }}>
               {(['12h', '24h'] as const).map(tf => (
-                <button key={tf} onClick={() => { setTimeFormat(tf); localStorage.setItem('time_format', tf) }} style={{
+                <button key={tf} onClick={() => { setTimeFormat(tf); setUiPref('time_format', tf) }} style={{
                   padding: '6px 16px', borderRadius: 'var(--radius-base, 8px)', border: '1px solid var(--border)',
                   background: timeFormat === tf ? 'var(--accent)' : 'transparent',
                   color: timeFormat === tf ? 'white' : 'var(--text-secondary)',

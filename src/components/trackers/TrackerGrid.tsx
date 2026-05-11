@@ -28,6 +28,7 @@ import { useTrackerStore } from '@/stores/trackers'
 import { db, TrackerDefinition, TrackerLog } from '@/db/schema'
 import TrackerLogModal from './TrackerLogModal'
 import { TRACKER_LIBRARY, CATEGORY_LABELS, LibraryTracker, TrackerCategory } from '@/lib/trackerLibrary'
+import { useUiPref } from '@/hooks/useUiPref'
 
 const ICON_CATEGORIES: { label: string; icons: { name: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] }[] = [
   {
@@ -400,7 +401,10 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
   // Fix mini chart: cap at relative height, never solid block
   const maxWeek = Math.max(...weekData, tracker.target, 1)
 
-  const startOnMonday = typeof window !== 'undefined' && localStorage.getItem('week_start') === 'monday'
+  // Reactive: useUiPref subscribes to `week_start-changed`, so toggling
+  // the setting in /settings re-renders this card immediately.
+  const weekStartPref = useUiPref('week_start', 'sunday')
+  const startOnMonday = weekStartPref === 'monday'
   const dayLabels = startOnMonday ? ['M','T','W','T','F','S','S'] : ['S','M','T','W','T','F','S']
   const baseDate = new Date()
   const weekStart = new Date(baseDate)

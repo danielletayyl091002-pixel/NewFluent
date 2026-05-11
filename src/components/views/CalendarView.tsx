@@ -6,6 +6,7 @@ import EventModal from '@/components/calendar/EventModal'
 import { nanoid } from 'nanoid'
 import { expandRecurring } from '@/lib/expandRecurring'
 import { safeDbWrite } from '@/lib/dbError'
+import { useUiPref } from '@/hooks/useUiPref'
 
 function getEventStyle(color: string): React.CSSProperties {
   const calStyle = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-cal-style') || 'soft' : 'soft'
@@ -188,9 +189,10 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
     return h * 60 + (m || 0)
   }
 
+  const weekStartPref = useUiPref('week_start', 'sunday')
   const weekDays = useMemo(() => {
     const days = []
-    const mondayStart = typeof localStorage !== 'undefined' && localStorage.getItem('week_start') === 'monday'
+    const mondayStart = weekStartPref === 'monday'
     const startOfWeek = new Date(currentDate)
     const dayOfWeek = currentDate.getDay()
     const offset = mondayStart ? (dayOfWeek === 0 ? 6 : dayOfWeek - 1) : dayOfWeek
@@ -201,7 +203,7 @@ function WeekView({ currentDate, tasks, onDeleteTask, pageUid, setTasks }: {
       days.push(d)
     }
     return days
-  }, [currentDate])
+  }, [currentDate, weekStartPref])
 
   const todayStr = new Date().toISOString().split('T')[0]
   const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -1025,6 +1027,9 @@ export default function CalendarView({
   const tasksRef = useRef<Task[]>([])
   useEffect(() => { tasksRef.current = tasks }, [tasks])
 
+  // Reactive: header label re-renders when the user toggles week_start in /settings
+  const calWeekStart = useUiPref('week_start', 'sunday')
+
   // Keyboard: press 'n' on the day view to open a "create event" modal at 9am
   // for the current day. Ignored when typing in inputs/textareas/contenteditable.
   useEffect(() => {
@@ -1356,7 +1361,7 @@ export default function CalendarView({
             textAlign: 'center'
           }}>
             {viewMode === 'day' ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : viewMode === 'week' ? (() => {
-              const mondayStart = typeof localStorage !== 'undefined' && localStorage.getItem('week_start') === 'monday'
+              const mondayStart = calWeekStart === 'monday'
               const dow = currentDate.getDay()
               const offset = mondayStart ? (dow === 0 ? 6 : dow - 1) : dow
               const ws = new Date(currentDate)

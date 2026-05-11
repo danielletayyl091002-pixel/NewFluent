@@ -8,6 +8,7 @@ import { expandRecurring } from '@/lib/expandRecurring'
 import { safeDbWrite } from '@/lib/dbError'
 import { formatHourLabel, formatHourDecimal, formatTimeString } from '@/lib/timeFormat'
 import { useDroppable } from '@dnd-kit/core'
+import { useUiPref } from '@/hooks/useUiPref'
 
 const getEventColor = (task: Task) => task.color || 'var(--accent)'
 
@@ -68,7 +69,7 @@ function WeekStrip({ today, onDayClick, selectedDay }: {
   onDayClick?: (date: Date) => void
   selectedDay?: string | null
 }) {
-  const startOnMonday = typeof window !== 'undefined' && localStorage.getItem('week_start') === 'monday'
+  const startOnMonday = useUiPref('week_start', 'sunday') === 'monday'
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today)

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { db, TrackerDefinition, TrackerLog } from '@/db/schema'
 import { useTrackerStore } from '@/stores/trackers'
+import { useUiPref } from '@/hooks/useUiPref'
 import {
   Droplets, Activity, BookOpen, Brain, Target, Dumbbell,
   Music, Apple, Pill, PenLine, Flame, Moon, Coffee, Heart,
@@ -77,7 +78,7 @@ export default function TrackerDetailPage() {
   const [logNotes, setLogNotes] = useState<Record<string, string>>({})
   const notesTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const startOnMonday = typeof window !== 'undefined' && localStorage.getItem('week_start') === 'monday'
+  const startOnMonday = useUiPref('week_start', 'sunday') === 'monday'
   const dayLabels = startOnMonday ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
   useEffect(() => {
