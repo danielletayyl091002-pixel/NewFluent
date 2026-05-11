@@ -371,7 +371,7 @@ export default function TodayDashboard() {
               {todaysEvents.length === 0 ? (
                 <Empty
                   message="Nothing scheduled today."
-                  cta="Press n in the calendar to add an event"
+                  cta="Open the calendar or use Quick Capture (⌘⇧N) to add an event"
                 />
               ) : (
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>

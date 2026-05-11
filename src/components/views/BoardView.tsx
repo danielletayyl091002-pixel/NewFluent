@@ -228,15 +228,8 @@ export default function BoardView({ pageUid }: { pageUid: string }) {
                     {colTasks.length}
                   </span>
                 </div>
-                <button
-                  onClick={() => setAddingTo(col.id)}
-                  style={{
-                    background: 'none', border: 'none',
-                    color: 'var(--text-tertiary)',
-                    cursor: 'pointer', fontSize: '18px',
-                    lineHeight: 1, padding: '0 4px'
-                  }}
-                >+</button>
+                {/* Top-right + button removed — the bottom "+ Add task"
+                    is the canonical add affordance per column. */}
               </div>
 
               <SortableContext

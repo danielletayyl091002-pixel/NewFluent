@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { db } from '@/db/schema'
 import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import LeftSidebar from '@/components/layout/LeftSidebar'
@@ -28,6 +29,19 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isMobile = useIsMobile()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dbError, setDbError] = useState<string | null>(null)
+  // Right rail page-awareness — auto-suppress on routes where the daily
+  // timeline + tracker rings are noise. User can still toggle it back
+  // via the edge tab. Dashboard, trackers, and per-page (which has its
+  // own calendar tab) are the surfaces where the rail is contextual.
+  const pathname = usePathname()
+  const railIrrelevantHere = (() => {
+    if (pathname === '/settings') return true
+    if (pathname === '/finance') return true
+    if (pathname === '/board') return true
+    if (pathname === '/calendar') return true   // page already IS a calendar
+    return false
+  })()
+  const effectiveRightVisible = rightVisible && !railIrrelevantHere
   // Cross-app drag (task → calendar slot). dnd-kit context lifted to the
   // layout so dashboard tasks can be dropped on the right rail timeline,
   // and board tasks can be dropped on the right rail too. Nested DndContext
@@ -421,9 +435,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* Right rail — hidden entirely on mobile */}
-      {!isMobile && rightVisible && <RightRail toggleRight={toggleRight} />}
+      {!isMobile && effectiveRightVisible && <RightRail toggleRight={toggleRight} />}
 
-      {!isMobile && !rightVisible && (
+      {!isMobile && !effectiveRightVisible && (
         <button
           onClick={toggleRight}
           aria-label="Show right sidebar"

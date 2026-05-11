@@ -178,7 +178,11 @@ export default function PageCanvas() {
           )}
         </div>
         <div data-flat style={{ display: 'flex', gap: '6px', marginBottom: '16px', alignItems: 'center' }}>
-          {(['page', 'board', 'calendar', 'canvas'] as const).map(v => (
+          {/* Per-page view tabs reduced to Page + Canvas. Kanban and
+              Calendar showed GLOBAL data while keeping the page's title in
+              the header — misleading mental model. Use /board and
+              /calendar routes for the global views instead. */}
+          {(['page', 'canvas'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
               style={{
                 padding: '5px 14px', borderRadius: '9999px',
@@ -191,7 +195,7 @@ export default function PageCanvas() {
               onMouseEnter={e => { if (view !== v) (e.currentTarget).style.background = 'var(--bg-hover)' }}
               onMouseLeave={e => { if (view !== v) (e.currentTarget).style.background = 'transparent' }}
             >
-              {v === 'page' ? 'Page' : v === 'board' ? 'Kanban' : v === 'calendar' ? 'Calendar' : 'Canvas'}
+              {v === 'page' ? 'Page' : 'Canvas'}
             </button>
           ))}
           <button

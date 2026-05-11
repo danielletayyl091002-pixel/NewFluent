@@ -200,49 +200,9 @@ export default function TrackerGrid() {
 
   return (
     <div>
-      {/* Pin to dashboard. The dashboard now shows ALL trackers (research:
-          Habitify/HabitNow pattern) and the pinned ones get a subtle
-          accent highlight — so the "limit" is gone and the chip becomes
-          a soft preference, not a gate. */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Highlight on dashboard <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-tertiary)' }}>(your top focus)</span>
-        </div>
-        <div data-flat style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {definitions.map(t => {
-            const isSelected = ringUids.includes(t.uid)
-            return (
-              <button
-                key={t.uid}
-                onPointerDown={e => e.stopPropagation()}
-                onClick={async () => {
-                  const next = isSelected
-                    ? ringUids.filter(u => u !== t.uid)
-                    : [...ringUids, t.uid]
-                  setRingUids(next)
-                  const val = JSON.stringify(next)
-                  const exist = await db.settings.where('key').equals('daily_progress_trackers').first()
-                  if (exist?.id) await db.settings.update(exist.id, { value: val })
-                  else await db.settings.add({ key: 'daily_progress_trackers', value: val })
-                }}
-                style={{
-                  padding: '4px 12px', borderRadius: '16px',
-                  border: isSelected ? `2px solid ${t.color}` : '1px solid var(--border)',
-                  background: isSelected ? `${t.color}18` : 'transparent',
-                  color: isSelected ? t.color : 'var(--text-secondary)',
-                  fontSize: '11px', fontWeight: 500, cursor: 'pointer',
-                  transition: 'all 0.1s'
-                }}
-              >
-                {t.name}
-                <span style={{ fontSize: '11px', opacity: 0.65, marginLeft: '8px', fontWeight: 400 }}>
-                  {t.type === 'habit' ? (getTodayValue(t.uid) > 0 ? '\u2713' : '\u2013') : `${getTodayValue(t.uid)}/${t.target}`}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      {/* Pin chip row removed — pinning is now done via the star button on
+          each tracker ring on the dashboard. One canonical surface. */}
+
 
       <DndContext
         sensors={sensors}
@@ -631,6 +591,7 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
             <input
               type="number"
               value={inputVal}
+              placeholder="0"
               onClick={e => e.stopPropagation()}
               onPointerDown={e => e.stopPropagation()}
               onChange={e => setInputVal(e.target.value)}
@@ -734,34 +695,14 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
       )}
 
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+        {/* Per-card week navigator removed — 9 cards × chevron buttons was
+            visually busy. Users can browse history on the tracker detail
+            page (/trackers/[uid]). The current week's mini chart is enough
+            for the grid view. */}
+        <div style={{ marginBottom: '4px' }}>
           <span style={{ fontSize: '9px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
             {monthYear}
           </span>
-          <div style={{ display: 'flex', gap: '2px' }}>
-            <button
-              onClick={e => { e.stopPropagation(); setWeekOffset(p => p - 1) }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: '1px', color: 'var(--text-tertiary)',
-                display: 'flex', alignItems: 'center'
-              }}
-            >
-              <ChevronLeft size={10} />
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); setWeekOffset(p => Math.min(p + 1, 0)) }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: '1px',
-                color: 'var(--text-tertiary)',
-                opacity: weekOffset >= 0 ? 0.3 : 1,
-                display: 'flex', alignItems: 'center'
-              }}
-            >
-              <ChevronRight size={10} />
-            </button>
-          </div>
         </div>
         {tracker.type === 'select' ? (
           // Mood-style ordinal scale: each day is a dot whose color reflects

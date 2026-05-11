@@ -180,13 +180,42 @@ export default function SettingsPage() {
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)' }}>
       <div className="page-shell" style={{ maxWidth: '640px', margin: '0 auto' }}>
-        <header style={{ marginBottom: '32px' }}>
+        <header style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Settings</h1>
           <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: 0 }}>Customize your workspace.</p>
         </header>
+        {/* Section anchor strip — sticky horizontal nav so users can jump
+            without scroll-hunting through 900+ lines of inline sections. */}
+        <nav data-flat style={{
+          position: 'sticky', top: 0, zIndex: 10,
+          background: 'var(--bg-primary)',
+          padding: '8px 0', marginBottom: '16px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex', flexWrap: 'wrap', gap: '4px',
+        }}>
+          {[
+            ['interface', 'Interface'],
+            ['appearance', 'Appearance'],
+            ['accent', 'Accent'],
+            ['calendar-prefs', 'Calendar'],
+            ['backgrounds', 'Backgrounds'],
+            ['help', 'Help'],
+            ['shortcuts', 'Shortcuts'],
+            ['data', 'Data'],
+          ].map(([id, label]) => (
+            <a key={id} href={`#${id}`}
+              style={{
+                padding: '4px 10px', borderRadius: '9999px',
+                fontSize: '12px', fontWeight: 500,
+                color: 'var(--text-secondary)', textDecoration: 'none',
+                background: 'var(--bg-secondary)',
+              }}
+            >{label}</a>
+          ))}
+        </nav>
 
         {/* Interface Style */}
-        <section style={{ marginBottom: '40px' }}>
+        <section id="interface" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Interface Style</h2>
           <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>Choose how your workspace feels.</p>
           <div style={{ display: 'flex', gap: '16px' }}>
@@ -237,7 +266,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Appearance */}
-        <section style={{ marginBottom: '40px' }}>
+        <section id="appearance" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Appearance</h2>
           <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>Fine-tune the look and feel of your workspace.</p>
 
@@ -477,7 +506,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Color Palettes */}
-        <section style={{ marginBottom: '40px' }}>
+        <section id="accent" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Accent Color</h2>
           <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>Choose a palette for links, buttons, and highlights.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
@@ -562,7 +591,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Week starts on */}
-        <section style={{ marginBottom: '40px' }}>
+        <section id="calendar-prefs" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Week starts on</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             {['sunday', 'monday'].map(day => (
@@ -603,7 +632,7 @@ export default function SettingsPage() {
         </section>
 
 
-        <section style={{ marginTop: '40px' }}>
+        <section id="backgrounds" style={{ marginTop: '40px', scrollMarginTop: '80px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
             Page Backgrounds
           </h2>
@@ -708,8 +737,27 @@ export default function SettingsPage() {
           ))}
         </section>
 
+        {/* Help — replay onboarding tour */}
+        <section id="help" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Help</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>Re-run the dashboard walkthrough.</p>
+          <button
+            onClick={async () => {
+              const existing = await db.settings.where('key').equals('tour_complete').first()
+              if (existing?.id) await db.settings.delete(existing.id)
+              window.location.href = '/'
+            }}
+            style={{
+              padding: '6px 14px', borderRadius: 'var(--radius-base, 8px)',
+              border: '1px solid var(--border)', background: 'var(--bg-secondary)',
+              color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >Replay onboarding tour</button>
+        </section>
+
         {/* Keyboard Shortcuts */}
-        <section style={{ marginBottom: '40px' }}>
+        <section id="shortcuts" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
           <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>Keyboard Shortcuts</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             {[
@@ -734,7 +782,7 @@ export default function SettingsPage() {
 
         {/* Export / Import Settings */}
         <section style={{ marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>Data</h2>
+          <h2 id="data" style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px', scrollMarginTop: '80px' }}>Data</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={async () => {
               const settings = await db.settings.toArray()
