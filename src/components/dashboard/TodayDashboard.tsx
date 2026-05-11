@@ -55,8 +55,10 @@ export default function TodayDashboard() {
 
   useEffect(() => {
     async function refresh() {
+      // Load EVERY task — backlog (no date) is a first-class citizen for
+      // the dashboard's drag-to-schedule flow.
       const all = await db.tasks.toArray()
-      setTasks(all.filter(t => t.scheduledDate || t.dueDate))
+      setTasks(all)
     }
     refresh()
     // Re-load when ClientLayout's drag handler schedules a task.
@@ -427,6 +429,24 @@ export default function TodayDashboard() {
                       <DraggableTask key={t.uid} task={t} />
                     ))}
                   </ul>
+                  {/* Backlog inline — drag-affordance for unscheduled tasks
+                      so users don't have to open the Plan-today modal
+                      (which covers the right rail and breaks the drop). */}
+                  {unscheduledTasks.length > 0 && (
+                    <>
+                      <div style={{
+                        marginTop: '12px', paddingTop: '8px',
+                        borderTop: '0.5px solid var(--border)',
+                        fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em',
+                        textTransform: 'uppercase', color: 'var(--text-tertiary)',
+                      }}>Backlog · drag onto a time slot</div>
+                      <ul style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {unscheduledTasks.map(t => (
+                          <DraggableTask key={t.uid} task={t} />
+                        ))}
+                      </ul>
+                    </>
+                  )}
                   <p style={{
                     margin: '8px 0 0', fontSize: '11px',
                     color: 'var(--text-tertiary)',
