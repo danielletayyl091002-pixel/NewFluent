@@ -31,7 +31,8 @@
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Recurring tasks UI, PWA manifest, AI weekly review \\(BYOK\\), drag-to-calendar plan' -m 'H — Recurring tasks: BoardView edit modal now exposes a Repeat dropdown \\(Does not repeat / Daily / Weekly / Monthly / Yearly / Weekdays\\). Engine in lib/expandRecurring already supports task-level recurrence — only UI was missing. *)",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'F — drag tasks → calendar slots \\(Sunsama-style time-blocking\\)' -m 'Implements the deferred F item per docs/drag-task-to-calendar.md. *)",
       "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'G — interactive 5-step onboarding tour with SVG spotlight' -m 'New src/components/ui/Tour.tsx walks new users through the dashboard with real UI highlights, not static slides: *)",
-      "Bash(xargs grep -l \"settings.*theme\\\\|sidebar.*settings\")"
+      "Bash(xargs grep -l \"settings.*theme\\\\|sidebar.*settings\")",
+      "Bash(git -c user.email=danielletayyl091002@users.noreply.github.com -c user.name=danielletayyl091002-pixel commit -m 'Collapse: dashboard sections + page-editor focus mode' -m 'Dashboard — Section component now accepts a collapseId prop. Each section header becomes role='\\\\''button'\\\\'' with aria-expanded; clicking the title \\(or pressing Enter/Space\\) toggles open/closed. State persists per section in localStorage \\(dashboard.collapsed.<id>\\). Applied to Today'\\\\''s trackers / Today'\\\\''s schedule / Tasks / Recent pages — users can collapse anything they don'\\\\''t want crowding the dashboard. *)"
     ]
   }
 }

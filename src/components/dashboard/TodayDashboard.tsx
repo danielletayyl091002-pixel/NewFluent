@@ -321,7 +321,7 @@ export default function TodayDashboard() {
             that benefits from being scanned first. */}
         {dashboardTrackers.all.length > 0 && (
           <div data-tour="trackers-section">
-          <Section title="Today's trackers" actionHref="/trackers" actionLabel="All trackers">
+          <Section title="Today's trackers" collapseId="trackers" actionHref="/trackers" actionLabel="All trackers">
             <div style={{
               // Rule-of-thirds × N. Min 72px per ring + gap means ~8-9
               // tiles per row at typical desktop, stacks gracefully on narrow.
@@ -367,7 +367,7 @@ export default function TodayDashboard() {
         <div className="dashboard-grid" style={{ marginTop: '24px' }}>
           {/* Primary column: today's schedule */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <Section title="Today's schedule" actionHref="/page/calendar" actionLabel="Open calendar">
+            <Section title="Today's schedule" collapseId="schedule" actionHref="/calendar" actionLabel="Open calendar">
               {todaysEvents.length === 0 ? (
                 <Empty
                   message="Nothing scheduled today."
@@ -404,7 +404,7 @@ export default function TodayDashboard() {
             </Section>
 
             <div data-tour="tasks-section">
-            <Section title="Tasks" actionHref="/board" actionLabel="Open board">
+            <Section title="Tasks" collapseId="tasks" actionHref="/board" actionLabel="Open board">
               {/* Sunsama-style "plan today" — pull from backlog without
                   leaving the dashboard. Only renders when there's a backlog. */}
               {unscheduledTasks.length > 0 && (
@@ -463,7 +463,7 @@ export default function TodayDashboard() {
           {/* Side column: recent pages (trackers now live in a full-width
               row below this 2-col grid where they have room to breathe). */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <Section title="Recent pages" actionHref={undefined}>
+            <Section title="Recent pages" collapseId="recent-pages" actionHref={undefined}>
               {recentPages.length === 0 ? (
                 <Empty
                   message="No pages yet."
@@ -595,29 +595,63 @@ function KPI({ label, value, hint }: { label: string; value: string; hint?: stri
 }
 
 function Section({
-  title, actionHref, actionLabel, children,
+  title, actionHref, actionLabel, collapseId, children,
 }: {
   title: string
   actionHref?: string
   actionLabel?: string
+  // Pass a stable id to make the section collapsible — open/closed state
+  // persists per-section in localStorage so users keep their layout.
+  collapseId?: string
   children: React.ReactNode
 }) {
+  const storageKey = collapseId ? `dashboard.collapsed.${collapseId}` : null
+  const [collapsed, setCollapsedState] = useState<boolean>(() => {
+    if (typeof localStorage === 'undefined' || !storageKey) return false
+    return localStorage.getItem(storageKey) === '1'
+  })
+  const toggle = () => {
+    const next = !collapsed
+    setCollapsedState(next)
+    if (storageKey) localStorage.setItem(storageKey, next ? '1' : '0')
+  }
+
   return (
     <section data-card style={{
       borderRadius: 'var(--radius-card, 12px)',
       background: 'var(--bg-primary)',
       border: '1px solid var(--border)',
-      padding: '16px',
+      padding: collapsed ? '12px 16px' : '16px',
     }}>
       <header style={{
-        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-        marginBottom: '12px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: collapsed ? 0 : '12px',
+        gap: '8px',
       }}>
-        <h2 style={{
-          margin: 0, fontSize: '13px', fontWeight: 700,
-          color: 'var(--text-primary)',
-          textTransform: 'uppercase', letterSpacing: '0.06em',
-        }}>{title}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, cursor: collapseId ? 'pointer' : 'default' }}
+          onClick={collapseId ? toggle : undefined}
+          role={collapseId ? 'button' : undefined}
+          tabIndex={collapseId ? 0 : undefined}
+          onKeyDown={collapseId ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } } : undefined}
+          aria-expanded={collapseId ? !collapsed : undefined}
+        >
+          {collapseId && (
+            <span aria-hidden style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '14px', height: '14px',
+              color: 'var(--text-tertiary)',
+              transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.15s',
+              fontSize: '10px',
+            }}>▾</span>
+          )}
+          <h2 style={{
+            margin: 0, fontSize: '13px', fontWeight: 700,
+            color: 'var(--text-primary)',
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            userSelect: 'none',
+          }}>{title}</h2>
+        </div>
         {actionHref && actionLabel && (
           <Link href={actionHref} style={{
             fontSize: '12px', color: 'var(--accent)',
@@ -625,7 +659,7 @@ function Section({
           }}>{actionLabel} →</Link>
         )}
       </header>
-      {children}
+      {!collapsed && children}
     </section>
   )
 }

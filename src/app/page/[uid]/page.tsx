@@ -41,6 +41,34 @@ export default function PageCanvas() {
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'page' | 'board' | 'calendar' | 'canvas'>('page')
+  // Focus mode: collapses the title bar + view tabs so just the document
+  // content remains. Persists per-page so the user keeps their writing
+  // state when navigating away and back. Toggle via the chevron button
+  // top-right of the page or by pressing F.
+  const focusKey = `page.focus.${uid}`
+  const [focusMode, setFocusMode] = useState<boolean>(() => {
+    if (typeof localStorage === 'undefined') return false
+    return localStorage.getItem(focusKey) === '1'
+  })
+  function toggleFocus() {
+    const next = !focusMode
+    setFocusMode(next)
+    if (typeof localStorage !== 'undefined') localStorage.setItem(focusKey, next ? '1' : '0')
+  }
+  // Keyboard shortcut: F (no modifiers) toggles focus mode while NOT
+  // typing in an input / contenteditable.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'f' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      e.preventDefault()
+      toggleFocus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusMode])
   const [editorContent, setEditorContent] = useState<Record<string, unknown> | null>(null)
   const loadedRef = useRef<string | null>(null)
 
@@ -109,11 +137,37 @@ export default function PageCanvas() {
   if (!page) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Page not found</div>
 
   return (
-    <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)' }}>
-      <div className="page-shell" style={{ maxWidth: '720px', margin: '0 auto' }}>
-        {/* Page title — emoji + title in one bubble. Spacing matches the
-            reference design: 16px inner padding, 12px gap, hairline border,
-            no nested chrome on the input. */}
+    <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)', position: 'relative' }}>
+      {/* Focus-mode toggle — floats at top-right so it's reachable in both
+          normal and focus mode. Press F to toggle from the keyboard. */}
+      <button
+        onClick={toggleFocus}
+        data-no-sculpt
+        title={focusMode ? 'Show page header (F)' : 'Focus mode — hide header (F)'}
+        aria-label={focusMode ? 'Show page header' : 'Enter focus mode'}
+        style={{
+          position: 'fixed',
+          top: '16px', right: '16px',
+          zIndex: 30,
+          width: '32px', height: '32px',
+          borderRadius: '50%',
+          border: '1px solid var(--border)',
+          background: 'var(--bg-primary)',
+          color: 'var(--text-tertiary)',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '14px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}
+      >{focusMode ? '⤢' : '⤡'}</button>
+
+      <div className="page-shell" style={{
+        maxWidth: focusMode ? '760px' : '720px',
+        margin: '0 auto',
+        paddingTop: focusMode ? '40px' : undefined,
+      }}>
+        {!focusMode && (
+        <>
         <div data-flat style={{ marginBottom: '16px', position: 'relative' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '12px',
@@ -214,6 +268,8 @@ export default function PageCanvas() {
             Export .md
           </button>
         </div>
+        </>
+        )}
       </div>
       {view === 'board' ? (
         <BoardView pageUid={uid} />
