@@ -19,6 +19,7 @@ import { usePagesStore } from '@/stores/pages'
 import { useTrackerStore } from '@/stores/trackers'
 import { expandRecurring } from '@/lib/expandRecurring'
 import { formatTimeString } from '@/lib/timeFormat'
+import TrackerRing from './TrackerRing'
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]
@@ -43,7 +44,7 @@ export default function TodayDashboard() {
 
   const pages = usePagesStore(s => s.pages)
   const loadPages = usePagesStore(s => s.load)
-  const { definitions: trackers, logs: trackerLogs, load: loadTrackers, getTodayValue, addLog, setTodayValue } = useTrackerStore()
+  const { definitions: trackers, logs: trackerLogs, load: loadTrackers, getTodayValue, addLog, setTodayValue, getWeekData } = useTrackerStore()
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [ringedUids, setRingedUids] = useState<string[]>([])
@@ -217,7 +218,53 @@ export default function TodayDashboard() {
           </section>
         )}
 
-        <div className="dashboard-grid">
+        {/* Trackers — full-width row so the ring tiles get horizontal
+            real estate to pack densely (8+ trackers in one row at desktop).
+            Sits above the 2-col grid because tracking is a daily ritual
+            that benefits from being scanned first. */}
+        {dashboardTrackers.all.length > 0 && (
+          <Section title="Today's trackers" actionHref="/trackers" actionLabel="All trackers">
+            <div style={{
+              // Rule-of-thirds × N. Min 72px per ring + gap means ~8-9
+              // tiles per row at typical desktop, stacks gracefully on narrow.
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))',
+              gap: '4px',
+              marginTop: '4px',
+            }}>
+              {dashboardTrackers.all.map(t => {
+                const isPinned = dashboardTrackers.pinnedSet.has(t.uid)
+                const todayVal = getTodayValue(t.uid)
+                const weekData = getWeekData(t.uid)
+                return (
+                  <TrackerRing
+                    key={t.uid}
+                    tracker={t}
+                    todayValue={todayVal}
+                    weekData={weekData}
+                    logs={trackerLogs}
+                    pinned={isPinned}
+                    onTap={() => {
+                      if (t.type === 'habit') {
+                        if (todayVal > 0) addLog(t.uid, -todayVal)
+                        else addLog(t.uid, 1)
+                      } else if (t.type === 'select' && t.options) {
+                        const opts: string[] = (() => { try { return JSON.parse(t.options!) } catch { return [] } })()
+                        const next = todayVal >= opts.length ? 0 : todayVal + 1
+                        setTodayValue(t.uid, next)
+                      } else {
+                        addLog(t.uid, 1)
+                      }
+                    }}
+                    onDetail={() => {/* TrackerRing handles routing */}}
+                  />
+                )
+              })}
+            </div>
+          </Section>
+        )}
+
+        <div className="dashboard-grid" style={{ marginTop: '24px' }}>
           {/* Primary column: today's schedule */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <Section title="Today's schedule" actionHref="/page/calendar" actionLabel="Open calendar">
@@ -305,120 +352,9 @@ export default function TodayDashboard() {
             </Section>
           </div>
 
-          {/* Side column: trackers + recent pages */}
+          {/* Side column: recent pages (trackers now live in a full-width
+              row below this 2-col grid where they have room to breathe). */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <Section title="Today's trackers" actionHref="/trackers" actionLabel="All trackers">
-              {dashboardTrackers.all.length === 0 ? (
-                <Empty
-                  message="No trackers yet."
-                  cta="Add a tracker to log mood, habits, or daily counts here"
-                />
-              ) : (
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {dashboardTrackers.all.map(t => {
-                    const isPinned = dashboardTrackers.pinnedSet.has(t.uid)
-                    void isPinned // pinned styling applied via the wrapper below
-                    const v = getTodayValue(t.uid)
-                    const pct = t.target > 0 ? Math.min(v / t.target, 1) : 0
-                    const opts: string[] = t.type === 'select' && t.options
-                      ? (() => { try { return JSON.parse(t.options!) } catch { return [] } })()
-                      : []
-                    return (
-                      <li key={t.uid} style={{
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        // Pinned trackers: subtle accent left-bar so they
-                        // visually anchor the eye without crowding the list.
-                        borderLeft: isPinned ? `3px solid ${t.color}` : '3px solid transparent',
-                        background: isPinned ? `${t.color}08` : 'transparent',
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', marginBottom: '6px' }}>
-                          <span
-                            onClick={() => router.push(`/trackers/${t.uid}`)}
-                            style={{ color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 500 }}
-                          >{t.name}</span>
-                          <span style={{ color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
-                            {t.type === 'select' ? (opts[v - 1] || '—') : t.target > 0 ? `${v}/${t.target}` : String(v)}
-                          </span>
-                        </div>
-                        {/* Inline log controls — log without leaving the dashboard.
-                            Daylio's "2-tap" principle. */}
-                        {t.type === 'select' && opts.length > 0 ? (
-                          <div data-flat style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                            {opts.map((opt, i) => {
-                              const optVal = i + 1
-                              const selected = v === optVal
-                              return (
-                                <button
-                                  key={i}
-                                  onClick={() => setTodayValue(t.uid, selected ? 0 : optVal)}
-                                  title={opt}
-                                  style={{
-                                    width: '26px', height: '26px',
-                                    borderRadius: '6px',
-                                    border: selected ? `2px solid ${t.color}` : '1px solid var(--border)',
-                                    background: selected ? `${t.color}18` : 'var(--bg-secondary)',
-                                    cursor: 'pointer', fontSize: '14px', padding: 0,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  }}
-                                >{opt}</button>
-                              )
-                            })}
-                          </div>
-                        ) : t.type === 'habit' ? (
-                          <button
-                            onClick={() => {
-                              if (v > 0) addLog(t.uid, -v)
-                              else addLog(t.uid, 1)
-                            }}
-                            data-no-sculpt
-                            style={{
-                              padding: '4px 12px', borderRadius: '9999px',
-                              border: `1px solid ${t.color}`,
-                              background: v > 0 ? t.color : 'transparent',
-                              color: v > 0 ? '#fff' : t.color,
-                              fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                            }}
-                          >{v > 0 ? '✓ Done' : 'Mark done'}</button>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <button
-                              onClick={() => { if (v > 0) addLog(t.uid, -1) }}
-                              data-no-sculpt
-                              style={{
-                                width: '22px', height: '22px', borderRadius: '50%',
-                                border: '1px solid var(--border)', background: 'none',
-                                cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                padding: 0,
-                              }}
-                            >−</button>
-                            <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: 'var(--bg-hover)', overflow: 'hidden' }}>
-                              <div style={{
-                                height: '100%', width: `${pct * 100}%`,
-                                background: t.color, transition: 'width 0.3s',
-                              }} />
-                            </div>
-                            <button
-                              onClick={() => addLog(t.uid, 1)}
-                              data-no-sculpt
-                              style={{
-                                width: '22px', height: '22px', borderRadius: '50%',
-                                border: 'none', background: t.color,
-                                cursor: 'pointer', fontSize: '14px', color: '#fff',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                padding: 0,
-                              }}
-                            >+</button>
-                          </div>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </Section>
-
             <Section title="Recent pages" actionHref={undefined}>
               {recentPages.length === 0 ? (
                 <Empty
