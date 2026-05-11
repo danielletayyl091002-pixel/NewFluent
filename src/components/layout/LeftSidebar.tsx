@@ -393,10 +393,19 @@ function PageItem({ page, active, depth, hasChildren, isExpanded, onToggle, onCl
         </span>
       </div>
 
-      {/* Hover actions */}
+      {/* Hover actions — given a bg matching the row so they don't bleed
+          over the truncated page title. Active row uses accent-light, hover
+          row uses bg-hover; the matching gradient + solid bg keeps the
+          buttons readable. */}
         <div className="page-item-actions" style={{
           position: 'absolute', right: '4px',
-          gap: '2px', alignItems: 'center'
+          top: '50%', transform: 'translateY(-50%)',
+          gap: '2px', alignItems: 'center',
+          padding: '2px 4px', borderRadius: '6px',
+          background: active ? 'var(--accent-light)' : 'var(--bg-hover)',
+          boxShadow: active
+            ? '-8px 0 8px -4px var(--accent-light)'
+            : '-8px 0 8px -4px var(--bg-hover)',
         }}>
           <button
             onClick={e => { e.stopPropagation(); onAddChild() }}

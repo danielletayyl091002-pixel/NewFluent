@@ -27,6 +27,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useTrackerStore } from '@/stores/trackers'
 import { db, TrackerDefinition, TrackerLog } from '@/db/schema'
 import TrackerLogModal from './TrackerLogModal'
+import { TRACKER_LIBRARY, CATEGORY_LABELS, LibraryTracker, TrackerCategory } from '@/lib/trackerLibrary'
 
 const ICON_CATEGORIES: { label: string; icons: { name: string; icon: React.ComponentType<{ size?: number; color?: string }> }[] }[] = [
   {
@@ -1021,6 +1022,9 @@ const TRACKER_TEMPLATES: TrackerTemplate[] = [
 
 function AddTrackerModal({ onClose }: { onClose: () => void }) {
   const addDefinition = useTrackerStore(s => s.addDefinition)
+  const [tab, setTab] = useState<'library' | 'custom'>('library')
+  const [librarySearch, setLibrarySearch] = useState('')
+  const [libraryCategory, setLibraryCategory] = useState<'all' | TrackerCategory>('all')
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('droplets')
   const [unit, setUnit] = useState('')
@@ -1028,6 +1032,26 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<'counter' | 'value' | 'habit' | 'select'>('counter')
   const [color, setColor] = useState('#3B82F6')
   const [selectOptions, setSelectOptions] = useState<string>('😢, 😕, 😐, 🙂, 😊')
+
+  // Filter the library by category + fuzzy search.
+  const filteredLibrary = (() => {
+    const q = librarySearch.trim().toLowerCase()
+    return TRACKER_LIBRARY.filter(t => {
+      if (libraryCategory !== 'all' && t.category !== libraryCategory) return false
+      if (!q) return true
+      return t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+    })
+  })()
+
+  async function addFromLibrary(t: LibraryTracker) {
+    const options = t.type === 'select' && t.options
+      ? JSON.stringify(t.options) : null
+    await addDefinition({
+      name: t.name, icon: t.icon, unit: t.unit, target: t.target,
+      color: t.color, type: t.type, options, notes: null,
+    })
+    onClose()
+  }
 
   const colors = [
     '#3B82F6', '#EF4444', '#22C55E', '#F59E0B',
@@ -1094,47 +1118,53 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--bg-primary)', borderRadius: '14px',
-          padding: '24px', width: '400px', maxWidth: '90vw',
+          padding: '24px',
+          width: tab === 'library' ? '640px' : '400px',
+          maxWidth: '90vw',
           maxHeight: '90vh', overflowY: 'auto',
           boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
-          border: '1px solid var(--border)'
+          border: '1px solid var(--border)',
+          transition: 'width 0.2s ease',
         }}
       >
         <h3 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
           New Tracker
         </h3>
 
-        {/* Templates — click adds the tracker directly (1-click flow).
-            Customisation form below is for blank-slate / advanced cases. */}
-        <div data-flat style={{ marginBottom: '20px' }}>
-          <div style={{
-            fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)',
-            letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px'
-          }}>Quick add</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
-            Click a template to add it instantly, or build custom below.
-          </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {TRACKER_TEMPLATES.map(t => (
-              <button
-                key={t.name}
-                onClick={() => addFromTemplate(t)}
-                title={`Add ${t.name} tracker`}
-                style={{
-                  padding: '4px 10px', borderRadius: '9999px',
-                  border: '1px solid var(--border)', background: 'var(--bg-secondary)',
-                  color: 'var(--text-secondary)', fontSize: '11px', cursor: 'pointer',
-                }}
-              >+ {t.name}</button>
-            ))}
-          </div>
-          <div style={{
-            marginTop: '12px', paddingTop: '12px',
-            borderTop: '0.5px solid var(--border)',
-            fontSize: '11px', color: 'var(--text-tertiary)',
-          }}>Or build a custom tracker below.</div>
+        {/* Tab strip — Library (browse pre-made) | Custom (build your own) */}
+        <div data-flat style={{
+          display: 'flex', gap: '4px', marginBottom: '16px',
+          padding: '3px', borderRadius: '8px',
+          background: 'var(--bg-secondary)',
+        }}>
+          {(['library', 'custom'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              style={{
+                flex: 1, padding: '6px 12px', borderRadius: '6px',
+                border: 'none',
+                background: tab === t ? 'var(--bg-primary)' : 'transparent',
+                color: tab === t ? 'var(--accent)' : 'var(--text-secondary)',
+                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                textTransform: 'capitalize',
+              }}
+            >{t === 'library' ? '📚 Library' : '✏️ Custom'}</button>
+          ))}
         </div>
 
+        {tab === 'library' ? (
+          <LibraryView
+            search={librarySearch}
+            setSearch={setLibrarySearch}
+            category={libraryCategory}
+            setCategory={setLibraryCategory}
+            items={filteredLibrary}
+            onAdd={addFromLibrary}
+          />
+        ) : (
+        <>
         {/* Icon picker */}
         <div style={{ marginBottom: '16px' }}>
           <label style={{
@@ -1342,7 +1372,135 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
             }}
           >Create Tracker</button>
         </div>
+        </>
+        )}
       </div>
+    </div>
+  )
+}
+
+// Library view — search + category chips + card grid. Each card shows
+// icon + name + type pill + description + Add button. 1-click add.
+function LibraryView({
+  search, setSearch, category, setCategory, items, onAdd,
+}: {
+  search: string
+  setSearch: (s: string) => void
+  category: 'all' | TrackerCategory
+  setCategory: (c: 'all' | TrackerCategory) => void
+  items: LibraryTracker[]
+  onAdd: (t: LibraryTracker) => void
+}) {
+  const categoryEntries = Object.entries(CATEGORY_LABELS) as [TrackerCategory, { label: string; emoji: string }][]
+  return (
+    <div data-flat>
+      {/* Search */}
+      <input
+        autoFocus
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search trackers (e.g. sleep, mood, focus)..."
+        style={{
+          width: '100%', padding: '8px 12px',
+          borderRadius: '8px',
+          border: '1px solid var(--border)',
+          background: 'var(--bg-secondary)',
+          color: 'var(--text-primary)',
+          fontSize: '13px', outline: 'none',
+          marginBottom: '10px', boxSizing: 'border-box',
+        }}
+      />
+
+      {/* Category chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '14px' }}>
+        <button
+          onClick={() => setCategory('all')}
+          style={{
+            padding: '4px 10px', borderRadius: '9999px',
+            border: 'none', cursor: 'pointer',
+            background: category === 'all' ? 'var(--accent)' : 'var(--bg-secondary)',
+            color: category === 'all' ? '#fff' : 'var(--text-secondary)',
+            fontSize: '11px', fontWeight: 500,
+          }}
+        >All</button>
+        {categoryEntries.map(([key, { label, emoji }]) => (
+          <button
+            key={key}
+            onClick={() => setCategory(key)}
+            style={{
+              padding: '4px 10px', borderRadius: '9999px',
+              border: 'none', cursor: 'pointer',
+              background: category === key ? 'var(--accent)' : 'var(--bg-secondary)',
+              color: category === key ? '#fff' : 'var(--text-secondary)',
+              fontSize: '11px', fontWeight: 500,
+            }}
+          >{emoji} {label}</button>
+        ))}
+      </div>
+
+      {/* Cards grid */}
+      {items.length === 0 ? (
+        <div style={{
+          padding: '40px', textAlign: 'center',
+          color: 'var(--text-tertiary)', fontSize: '13px',
+        }}>
+          No matches. Try a different search or switch to <strong>Custom</strong>.
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gap: '8px',
+        }}>
+          {items.map(t => {
+            const typeLabel = t.type === 'select' ? 'Scale' : t.type[0].toUpperCase() + t.type.slice(1)
+            return (
+              <button
+                key={t.name}
+                onClick={() => onAdd(t)}
+                title={`Add ${t.name}`}
+                style={{
+                  padding: '12px', borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-secondary)',
+                  cursor: 'pointer', textAlign: 'left',
+                  display: 'flex', flexDirection: 'column', gap: '6px',
+                  transition: 'border-color 0.1s, transform 0.1s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = t.color
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                    <span style={{ color: t.color, display: 'flex', flexShrink: 0 }}>
+                      {renderIcon(t.icon, 16, t.color)}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.name}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    padding: '1px 6px', borderRadius: '9999px',
+                    background: `${t.color}18`, color: t.color,
+                    flexShrink: 0,
+                  }}>{typeLabel}</span>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
+                  {t.description}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
