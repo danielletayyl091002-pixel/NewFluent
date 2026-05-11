@@ -730,6 +730,9 @@ div:hover > .tracker-drag-handle { opacity: 0.6 !important; }
 [data-density="comfortable"] { --spacing-base: 1; --density-padding: 12px; --density-gap: 12px; --density-section: 40px; }
 [data-density="relaxed"] { --spacing-base: 1.35; --density-padding: 20px; --density-gap: 20px; --density-section: 56px; }
 
+/* TrackerRing pin star — visible on hover (or always when pinned). */
+[role="button"]:hover .ring-pin-btn { opacity: 1 !important; }
+
 /* Skeleton pulse — used by loading.tsx for streaming UIs. */
 .skeleton-pulse {
   background: linear-gradient(90deg,

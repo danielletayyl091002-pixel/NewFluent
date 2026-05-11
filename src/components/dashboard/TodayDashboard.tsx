@@ -62,6 +62,20 @@ export default function TodayDashboard() {
     })
   }, [])
 
+  // Toggle pin from the dashboard (star button on each ring tile).
+  // Persists to the same daily_progress_trackers setting that the
+  // /trackers chip row writes.
+  async function togglePin(uid: string) {
+    const next = ringedUids.includes(uid)
+      ? ringedUids.filter(u => u !== uid)
+      : [...ringedUids, uid]
+    setRingedUids(next)
+    const val = JSON.stringify(next)
+    const exist = await db.settings.where('key').equals('daily_progress_trackers').first()
+    if (exist?.id) await db.settings.update(exist.id, { value: val })
+    else await db.settings.add({ key: 'daily_progress_trackers', value: val })
+  }
+
   // Today's events + tasks (with recurring expansion). Events have a startTime;
   // tasks don't. Sort events by startTime, tasks by status.
   const todaysItems = useMemo(() => {
@@ -257,6 +271,7 @@ export default function TodayDashboard() {
                       }
                     }}
                     onDetail={() => {/* TrackerRing handles routing */}}
+                    onTogglePin={() => togglePin(t.uid)}
                   />
                 )
               })}

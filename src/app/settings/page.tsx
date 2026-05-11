@@ -179,9 +179,11 @@ export default function SettingsPage() {
 
   return (
     <div style={{ height: '100vh', overflowY: 'auto', background: 'var(--bg-primary)' }}>
-      <div style={{ maxWidth: '640px', margin: '0 auto', padding: '40px 40px 120px' }}>
-        <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Settings</h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '40px' }}>Customize your workspace.</p>
+      <div className="page-shell" style={{ maxWidth: '640px', margin: '0 auto' }}>
+        <header style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Settings</h1>
+          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: 0 }}>Customize your workspace.</p>
+        </header>
 
         {/* Interface Style */}
         <section style={{ marginBottom: '40px' }}>

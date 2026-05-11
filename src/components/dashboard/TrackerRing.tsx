@@ -21,6 +21,7 @@ interface Props {
   pinned: boolean
   onTap: () => void             // 1-tap log
   onDetail: () => void          // open log modal / detail
+  onTogglePin?: () => void      // star button: pin/unpin to dashboard
 }
 
 const SIZE = 56                 // ring diameter
@@ -29,7 +30,7 @@ const RADIUS = (SIZE - STROKE) / 2
 const CIRC = 2 * Math.PI * RADIUS
 
 export default function TrackerRing({
-  tracker, todayValue, weekData, logs, pinned, onTap, onDetail,
+  tracker, todayValue, weekData, logs, pinned, onTap, onDetail, onTogglePin,
 }: Props) {
   const router = useRouter()
 
@@ -152,6 +153,31 @@ export default function TrackerRing({
             lineHeight: 1.2, minWidth: '14px', textAlign: 'center',
             boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
           }}>{streak}</span>
+        )}
+        {/* Pin/unpin star — top-left, only visible on hover or when pinned */}
+        {onTogglePin && (
+          <button
+            onClick={e => { e.stopPropagation(); onTogglePin() }}
+            data-no-sculpt
+            aria-label={pinned ? 'Unpin from dashboard' : 'Pin to dashboard'}
+            title={pinned ? 'Unpin from dashboard' : 'Pin to dashboard'}
+            className="ring-pin-btn"
+            style={{
+              position: 'absolute',
+              top: -6, left: -6,
+              width: 18, height: 18,
+              borderRadius: '50%',
+              border: 'none', padding: 0,
+              background: pinned ? tracker.color : 'var(--bg-primary)',
+              color: pinned ? '#fff' : 'var(--text-tertiary)',
+              fontSize: '10px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: pinned ? 1 : 0,
+              transition: 'opacity 0.15s, background 0.15s',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+              lineHeight: 1,
+            }}
+          >★</button>
         )}
       </div>
 

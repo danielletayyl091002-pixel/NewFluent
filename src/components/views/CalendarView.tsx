@@ -1396,7 +1396,7 @@ export default function CalendarView({
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           {(['day', 'week', 'month', 'agenda'] as const).map(v => (
             <button key={v} onClick={() => setViewMode(v)}
               style={{
@@ -1412,6 +1412,20 @@ export default function CalendarView({
               {v}
             </button>
           ))}
+          <button
+            onClick={async () => {
+              const { tasksToIcs, downloadIcs } = await import('@/lib/icsExport')
+              downloadIcs(tasksToIcs(tasks))
+            }}
+            data-no-sculpt
+            title="Export events as .ics for Google/Apple Calendar"
+            style={{
+              padding: '4px 10px', borderRadius: '6px',
+              border: '1px solid var(--border)',
+              background: 'transparent', color: 'var(--text-tertiary)',
+              fontSize: '11px', cursor: 'pointer', marginLeft: '4px',
+            }}
+          >Export .ics</button>
         </div>
       </div>
 
