@@ -1050,6 +1050,20 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
     if (t.options) setSelectOptions(t.options.join(', '))
   }
 
+  // 1-click template add — most users just want "Sleep" or "Water" with the
+  // standard config. Auto-submit removes the redundant "Create Tracker" tap.
+  // Custom trackers still go through the full form below.
+  async function addFromTemplate(t: TrackerTemplate) {
+    const options = t.type === 'select' && t.options
+      ? JSON.stringify(t.options)
+      : null
+    await addDefinition({
+      name: t.name, icon: t.icon, unit: t.unit, target: t.target,
+      color: t.color, type: t.type, options, notes: null,
+    })
+    onClose()
+  }
+
   const TYPE_OPTIONS: { value: 'counter' | 'value' | 'habit' | 'select'; label: string; desc: string; preview: string }[] = [
     { value: 'counter', label: 'Counter', desc: '+ / − buttons',     preview: '−  3  +' },
     { value: 'value',   label: 'Value',   desc: 'enter a number',    preview: '30 min' },
@@ -1090,26 +1104,35 @@ function AddTrackerModal({ onClose }: { onClose: () => void }) {
           New Tracker
         </h3>
 
-        {/* Templates — one click to populate the rest of the form. Reduces
-            blank-canvas friction; restores deleted seed trackers. */}
+        {/* Templates — click adds the tracker directly (1-click flow).
+            Customisation form below is for blank-slate / advanced cases. */}
         <div data-flat style={{ marginBottom: '20px' }}>
           <div style={{
             fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)',
-            letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px'
-          }}>Start from a template</div>
+            letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px'
+          }}>Quick add</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+            Click a template to add it instantly, or build custom below.
+          </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {TRACKER_TEMPLATES.map(t => (
               <button
                 key={t.name}
-                onClick={() => applyTemplate(t)}
+                onClick={() => addFromTemplate(t)}
+                title={`Add ${t.name} tracker`}
                 style={{
                   padding: '4px 10px', borderRadius: '9999px',
                   border: '1px solid var(--border)', background: 'var(--bg-secondary)',
                   color: 'var(--text-secondary)', fontSize: '11px', cursor: 'pointer',
                 }}
-              >{t.name}</button>
+              >+ {t.name}</button>
             ))}
           </div>
+          <div style={{
+            marginTop: '12px', paddingTop: '12px',
+            borderTop: '0.5px solid var(--border)',
+            fontSize: '11px', color: 'var(--text-tertiary)',
+          }}>Or build a custom tracker below.</div>
         </div>
 
         {/* Icon picker */}

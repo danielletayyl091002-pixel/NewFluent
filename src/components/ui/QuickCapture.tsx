@@ -20,9 +20,20 @@ const KIND_OPTIONS: { value: CaptureKind; label: string; placeholder: string }[]
 
 // Universal quick-add. Sunsama-style: one keyboard shortcut, three things
 // you can capture without leaving the dashboard. Picks the right table
-// based on the kind tab.
+// based on the kind tab. Remembers the last kind across opens (most
+// users capture the same kind repeatedly — tasks, then tasks, then tasks).
+const LAST_KIND_KEY = 'quickcapture_last_kind'
+function readLastKind(): CaptureKind {
+  if (typeof localStorage === 'undefined') return 'page'
+  const v = localStorage.getItem(LAST_KIND_KEY)
+  return (v === 'task' || v === 'event' || v === 'page') ? v : 'page'
+}
 export default function QuickCapture({ onClose, onCreated }: Props) {
-  const [kind, setKind] = useState<CaptureKind>('page')
+  const [kind, setKindState] = useState<CaptureKind>(readLastKind)
+  const setKind = (k: CaptureKind) => {
+    setKindState(k)
+    if (typeof localStorage !== 'undefined') localStorage.setItem(LAST_KIND_KEY, k)
+  }
   const [title, setTitle] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()

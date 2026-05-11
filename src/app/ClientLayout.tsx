@@ -8,8 +8,8 @@ import RightRail from '@/components/layout/RightRail'
 import CmdK from '@/components/CmdK'
 import ShortcutsModal from '@/components/ui/ShortcutsModal'
 import QuickCapture from '@/components/ui/QuickCapture'
-import OnboardingModal from '@/components/ui/OnboardingModal'
 import Tour from '@/components/ui/Tour'
+// OnboardingModal kept on disk for potential future use but not imported here.
 import ErrorToast from '@/components/ui/ErrorToast'
 import { useSidebarVisibility } from '@/hooks/useSidebarVisibility'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -24,7 +24,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showQuickCapture, setShowQuickCapture] = useState(false)
   const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0)
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  // showOnboarding kept as a state hook for the gated tour effect; never
+  // set true now that we silent-seed instead of showing the welcome modal.
+  const showOnboarding = false
   const [showTour, setShowTour] = useState(false)
   const isMobile = useIsMobile()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -96,9 +98,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     registerErrorHandler((msg) => setDbError(msg))
   }, [])
 
-  // First-run onboarding check. Fires only when the user has no pages
-  // AND has never completed onboarding. Existing users (page count > 0)
-  // get the flag backfilled so they never see the modal.
+  // First-run onboarding — silently seed the Getting Started page in the
+  // background and let the interactive Tour handle the welcome. The 3-step
+  // welcome modal was redundant with the Tour (modal pitched the product;
+  // Tour teaches with real UI highlights). Skipping it removes 4 clicks
+  // from a new user's first session.
   useEffect(() => {
     const checkOnboarding = async () => {
       const done = await db.settings
@@ -107,7 +111,27 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       const pageCount = await db.pages.count()
       if (pageCount === 0) {
-        setShowOnboarding(true)
+        // Seed silently — no modal. Tour fires after this completes.
+        try {
+          const { GETTING_STARTED_BLOCKS } = await import('@/lib/gettingStarted')
+          const { nanoid } = await import('nanoid')
+          const uid = nanoid()
+          const now = new Date().toISOString()
+          await db.pages.add({
+            uid, title: 'Getting Started', icon: '\u{1F44B}',
+            parentUid: null, isFavorite: false, inTrash: false, order: 0,
+            createdAt: now, updatedAt: now,
+          })
+          await db.blocks.bulkAdd(GETTING_STARTED_BLOCKS.map((b, i) => ({
+            uid: nanoid(), pageUid: uid,
+            type: b.type, content: b.content, checked: false, order: i,
+            createdAt: now, updatedAt: now,
+          })))
+          await db.settings.add({ key: 'onboarding_complete', value: 'true' })
+          setSidebarRefreshKey(k => k + 1)
+        } catch (err) {
+          console.error('Onboarding seed failed', err)
+        }
       } else {
         await db.settings.add({ key: 'onboarding_complete', value: 'true' })
       }
@@ -458,16 +482,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         />
       )}
 
-      {showOnboarding && (
-        <OnboardingModal
-          onComplete={() => {
-            setShowOnboarding(false)
-            // Bump sidebar so the new Getting Started page shows up
-            // without needing a reload.
-            setSidebarRefreshKey(k => k + 1)
-          }}
-        />
-      )}
+      {/* OnboardingModal kept as a component for future use, but not
+          rendered — first-run is now silent-seed + Tour. */}
 
       {dbError && (
         <ErrorToast
