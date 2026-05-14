@@ -15,6 +15,10 @@ interface TrackerState {
   setTodayValue: (trackerUid: string, value: number, note?: string) => Promise<void>
   getTodayValue: (trackerUid: string) => number
   getWeekData: (trackerUid: string) => number[]
+  /** True consecutive-days streak (walks back from today across all logs).
+   *  Counts a day as "hit" when the day's total value > 0. For habits with
+   *  a target > 1 you can pass `target` to require value >= target. */
+  getCurrentStreak: (trackerUid: string, target?: number) => number
 }
 
 function todayStr() {
@@ -140,5 +144,38 @@ export const useTrackerStore = create<TrackerState>((set, get) => ({
     return days.map(day =>
       logs.filter(l => l.date === day).reduce((sum, l) => sum + l.value, 0)
     )
+  },
+
+  getCurrentStreak(trackerUid, target = 1) {
+    // Walk backwards from today; stop at the first day with no qualifying
+    // log. If today itself isn't logged yet, give the user a one-day grace
+    // (start from yesterday) so the chain doesn't visually "break" mid-day.
+    const logs = get().logs.filter(l => l.trackerUid === trackerUid)
+    const sumByDay = new Map<string, number>()
+    for (const l of logs) {
+      sumByDay.set(l.date, (sumByDay.get(l.date) || 0) + l.value)
+    }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayKey = today.toISOString().split('T')[0]
+    const todayHit = (sumByDay.get(todayKey) || 0) >= target
+    let streak = 0
+    let cursor = new Date(today)
+    if (!todayHit) {
+      // Grace day: don't count today as a miss; start from yesterday.
+      cursor.setDate(cursor.getDate() - 1)
+    }
+    while (true) {
+      const key = cursor.toISOString().split('T')[0]
+      if ((sumByDay.get(key) || 0) >= target) {
+        streak++
+        cursor.setDate(cursor.getDate() - 1)
+      } else {
+        break
+      }
+    }
+    // If today IS hit, count it on top of the past run.
+    if (todayHit) streak++
+    return streak
   },
 }))

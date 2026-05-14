@@ -96,8 +96,8 @@ export default function TrackerRing({
         tracker.type === 'habit' ? (todayValue > 0 ? 'done' : 'mark done')
         : tracker.type === 'select' ? (todayValue > 0 ? 'logged' : 'cycle scale')
         : `${todayValue}${tracker.target > 0 ? ` of ${tracker.target}` : ''} logged today, tap to add 1`
-      }${streak >= 3 ? `, ${streak} day streak` : ''}`}
-      title={`${tracker.name} — tap to log${streak >= 3 ? ` · ${streak}d streak` : ''}`}
+      }${streak >= 1 ? `, ${streak} day streak` : ''}`}
+      title={`${tracker.name} — tap to log${streak >= 1 ? ` · 🔥 ${streak}-day streak` : ''}`}
       style={{
         position: 'relative',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -145,8 +145,13 @@ export default function TrackerRing({
         }}>
           {centerLabel}
         </div>
-        {streak >= 3 && (
-          <span aria-label={`${streak} day streak`} style={{
+        {/* Streak badge: 🔥 N. Lower threshold from previous "≥3" so the
+            loss-aversion ping kicks in from day 1 — research consistently
+            shows early streaks are the most fragile and the most
+            motivating to protect. Mood/select trackers with target=0
+            don't show streaks (no concept of "succeeding" at a feeling). */}
+        {streak >= 1 && !(tracker.type === 'select' && tracker.target === 0) && (
+          <span aria-label={`${streak} day streak`} title={`🔥 ${streak}-day streak`} style={{
             position: 'absolute',
             top: -4, right: -6,
             background: tracker.color,
@@ -155,7 +160,11 @@ export default function TrackerRing({
             padding: '1px 5px', borderRadius: '9999px',
             lineHeight: 1.2, minWidth: '14px', textAlign: 'center',
             boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-          }}>{streak}</span>
+            display: 'inline-flex', alignItems: 'center', gap: '1px',
+          }}>
+            <span aria-hidden style={{ fontSize: '8px' }}>🔥</span>
+            {streak}
+          </span>
         )}
         {/* Pin/unpin star — top-left, only visible on hover or when pinned */}
         {onTogglePin && (

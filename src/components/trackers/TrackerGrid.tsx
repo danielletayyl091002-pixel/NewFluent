@@ -494,18 +494,32 @@ function TrackerCard({ tracker, todayValue, weekData, onClick, onEdit, onIncreme
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {/* Streak counter */}
+          {/* Streak counter — true all-time current streak (walks back
+              across all logs, not just this week). Shown from day 1 so
+              the user gets the loss-aversion ping early. */}
           {(() => {
-            let streak = 0
-            for (let i = weekData.length - 1; i >= 0; i--) {
-              if (weekData[i] > 0) streak++
-              else break
-            }
-            return streak >= 2 ? (
-              <span style={{ fontSize: '10px', fontWeight: 700, color: tracker.color, background: `${tracker.color}18`, padding: '1px 6px', borderRadius: '9999px' }}>
-                {streak}d
+            // For habits the streak should require hitting the target
+            // (e.g., 1 = "did it"); for value-trackers any non-zero log
+            // counts. Mood (target=0, type=select) shouldn't show a
+            // streak — there's no concept of "succeeding" at a feeling.
+            if (tracker.type === 'select' && tracker.target === 0) return null
+            const target = tracker.target > 0 ? tracker.target : 1
+            const streak = useTrackerStore.getState().getCurrentStreak(tracker.uid, target)
+            if (streak < 1) return null
+            return (
+              <span
+                title={`${streak}-day streak`}
+                style={{
+                  fontSize: '10px', fontWeight: 700, color: tracker.color,
+                  background: `${tracker.color}18`,
+                  padding: '1px 6px', borderRadius: '9999px',
+                  display: 'inline-flex', alignItems: 'center', gap: '2px',
+                }}
+              >
+                <span aria-hidden style={{ fontSize: '10px' }}>🔥</span>
+                {streak}
               </span>
-            ) : null
+            )
           })()}
           {/* Mood/select trackers don't have a "target" — never show the
               completion checkmark, which would otherwise gamify the

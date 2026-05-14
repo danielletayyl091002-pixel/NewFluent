@@ -240,6 +240,31 @@ export default function TodayDashboard() {
                 falls back to the original generic version. */}
             {greet(now)}{profile.displayName ? `, ${profile.displayName}` : ''}.
           </h1>
+          {/* Hero streak line — surfaces the user's longest active streak
+              right under the greeting so loss-aversion is the first thing
+              they see. Hidden when no active streak. */}
+          {(() => {
+            let best: { name: string; color: string; n: number } | null = null
+            for (const t of trackers) {
+              if (t.type === 'select' && t.target === 0) continue
+              const target = t.target > 0 ? t.target : 1
+              const n = useTrackerStore.getState().getCurrentStreak(t.uid, target)
+              if (n >= 1 && (!best || n > best.n)) best = { name: t.name, color: t.color, n }
+            }
+            if (!best) return null
+            return (
+              <div style={{
+                marginTop: '8px', fontSize: '13px',
+                color: 'var(--text-secondary)',
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}>
+                <span aria-hidden style={{ fontSize: '14px' }}>🔥</span>
+                <span>
+                  <strong style={{ color: best.color }}>{best.n}-day {best.name}</strong> streak — keep it going today.
+                </span>
+              </div>
+            )
+          })()}
         </header>
 
         {/* KPI strip — only the two action-relevant counts on the
