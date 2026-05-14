@@ -23,6 +23,7 @@ import TrackerRing from './TrackerRing'
 import { generateReview, ReviewOutput } from '@/lib/aiReview'
 import { useDraggable } from '@dnd-kit/core'
 import { useUserProfile } from '@/hooks/useUserProfile'
+import WidgetsRow from '@/components/widgets/WidgetsRow'
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]
@@ -252,6 +253,10 @@ export default function TodayDashboard() {
           <KPI label="Events" value={String(eventCount)} hint={eventCount === 1 ? 'scheduled today' : 'scheduled today'} />
           <KPI label="Tasks open" value={String(taskOpenCount)} hint={taskDoneCount > 0 ? `${taskDoneCount} done today` : 'nothing due'} />
         </section>
+
+        {/* Widget row — Clock / Countdown / Quote etc. Toggled per-widget
+            in /settings → Widgets. Renders nothing if user disabled all. */}
+        <WidgetsRow />
 
         {/* Weekly recap — only on weekends so users get a built-in review
             moment without it cluttering weekday dashboards. */}

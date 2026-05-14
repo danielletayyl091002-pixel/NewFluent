@@ -6,10 +6,12 @@ import { saveSetting } from '@/lib/settingsDb'
 import { setUiPref } from '@/hooks/useUiPref'
 import { useUserProfile, saveProfile, initialFor } from '@/hooks/useUserProfile'
 import { fileToDataUrl } from '@/lib/imageUtils'
+import { useWidgets, toggleWidget, updateWidgetConfig } from '@/hooks/useWidgets'
 
 
 export default function SettingsPage() {
   const profile = useUserProfile()
+  const { widgets } = useWidgets()
   const [nameDraft, setNameDraft] = useState('')
   const avatarInputRef = useRef<HTMLInputElement>(null)
   // Sync local draft once the profile loads
@@ -211,6 +213,7 @@ export default function SettingsPage() {
         }}>
           {[
             ['profile', 'Profile'],
+            ['widgets', 'Widgets'],
             ['interface', 'Interface'],
             ['appearance', 'Appearance'],
             ['accent', 'Accent'],
@@ -300,6 +303,76 @@ export default function SettingsPage() {
               fontSize: '13px', outline: 'none', boxSizing: 'border-box',
             }}
           />
+        </section>
+
+        {/* Widgets — toggle which dashboard widgets appear and edit
+            per-widget config (e.g., countdown date). Render order on the
+            dashboard matches the order in this list. */}
+        <section id="widgets" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Widgets</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>Small cards on your Today dashboard. Local-only, no internet needed.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {widgets.map(w => {
+              const meta: Record<string, { label: string; desc: string }> = {
+                clock:     { label: 'Clock',     desc: 'Live time and date' },
+                countdown: { label: 'Countdown', desc: 'Days until a date you choose' },
+                quote:     { label: 'Quote',     desc: 'A new short quote each day' },
+              }
+              const m = meta[w.id]
+              if (!m) return null
+              return (
+                <div key={w.id} style={{
+                  display: 'flex', alignItems: 'flex-start',
+                  gap: '12px', padding: '10px 14px',
+                  borderRadius: 'var(--radius-base, 10px)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-secondary)',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={w.enabled}
+                    onChange={e => toggleWidget(w.id, e.target.checked, widgets)}
+                    style={{ marginTop: '4px', accentColor: 'var(--accent)' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{m.desc}</div>
+                    {/* Per-widget config inline. Only countdown needs it
+                        in this first cut. */}
+                    {w.id === 'countdown' && w.enabled && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <input
+                          type="text"
+                          placeholder="Label (e.g., New Year)"
+                          value={typeof w.config.label === 'string' ? w.config.label : ''}
+                          onChange={e => updateWidgetConfig('countdown', { label: e.target.value }, widgets)}
+                          style={{
+                            flex: 1, padding: '6px 10px',
+                            borderRadius: 'var(--radius-base, 6px)',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-primary)', color: 'var(--text-primary)',
+                            fontSize: '12px', outline: 'none',
+                          }}
+                        />
+                        <input
+                          type="date"
+                          value={typeof w.config.date === 'string' ? w.config.date : ''}
+                          onChange={e => updateWidgetConfig('countdown', { date: e.target.value }, widgets)}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 'var(--radius-base, 6px)',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-primary)', color: 'var(--text-primary)',
+                            fontSize: '12px', outline: 'none',
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </section>
 
         {/* Interface Style */}
