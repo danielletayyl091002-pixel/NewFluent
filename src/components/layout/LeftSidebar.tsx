@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { db, Page, seedIfEmpty } from '@/db/schema'
 import { safeDbWrite } from '@/lib/dbError'
 import { usePagesStore } from '@/stores/pages'
+import { useUserProfile, initialFor } from '@/hooks/useUserProfile'
 
 interface LeftSidebarProps {
   collapsed: boolean
@@ -16,6 +17,7 @@ interface LeftSidebarProps {
 export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onNavigate }: LeftSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const profile = useUserProfile()
   // User-triggered navigation — also closes the mobile overlay if the
   // parent passed onNavigate. The init-time home redirect uses
   // router.replace directly and is intentionally excluded.
@@ -152,29 +154,50 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
       overflow: 'hidden',
       transition: 'width 200ms ease-in-out, min-width 200ms ease-in-out',
     }}>
-      <div style={{
-        height: '48px',
-        display: 'flex', alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        padding: collapsed ? '0' : '0 16px',
-        borderBottom: '1px solid var(--border)',
-        fontWeight: 700, fontSize: '15px',
-        color: 'var(--text-primary)',
-        overflow: 'hidden',
-      }}>
+      <div
+        onClick={() => navigateTo('/settings')}
+        title="Edit profile"
+        style={{
+          height: '48px',
+          display: 'flex', alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          gap: '8px',
+          padding: collapsed ? '0' : '0 16px',
+          borderBottom: '1px solid var(--border)',
+          fontWeight: 700, fontSize: '15px',
+          color: 'var(--text-primary)',
+          overflow: 'hidden',
+          cursor: 'pointer',
+        }}
+      >
+        {/* Avatar circle — image when set, initial otherwise. Click goes
+            to /settings so the user can edit name + photo. */}
+        <div style={{
+          width: '28px', height: '28px', flexShrink: 0,
+          borderRadius: '50%',
+          background: profile.avatarUrl
+            ? `url('${profile.avatarUrl}') center / cover no-repeat`
+            : 'var(--accent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontSize: '13px', fontWeight: 700,
+          border: '1px solid var(--border)',
+        }}>
+          {!profile.avatarUrl && initialFor(profile.displayName)}
+        </div>
         <span style={{
           opacity: collapsed ? 0 : 1,
           width: collapsed ? 0 : 'auto',
           overflow: 'hidden',
           pointerEvents: collapsed ? 'none' : 'auto',
           whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
           transition: 'opacity 150ms ease-in-out, width 200ms ease-in-out',
         }}>
-          Fluent
+          {profile.displayName || 'Fluent'}
         </span>
         {toggleLeft && (
           <button
-            onClick={toggleLeft}
+            onClick={(e) => { e.stopPropagation(); toggleLeft() }}
             aria-label={collapsed ? 'Expand left sidebar' : 'Hide left sidebar'}
             style={{
               marginLeft: collapsed ? 0 : 'auto',

@@ -8,6 +8,7 @@ import CalendarView from '@/components/views/CalendarView'
 import CanvasView from '@/components/views/CanvasView'
 import FluentEditor from '@/components/editor/FluentEditor'
 import { exportPageToMarkdown } from '@/lib/exportMarkdown'
+import { fileToDataUrl } from '@/lib/imageUtils'
 
 function legacyToTipTap(blocks: Block[]): Record<string, unknown> {
   return {
@@ -133,6 +134,29 @@ export default function PageCanvas() {
     window.dispatchEvent(new CustomEvent('page-title-updated'))
   }
 
+  // ── Cover image (Notion-style banner) ─────────────────────────────
+  // File picker → resize → DataURL → save to Page row. Stored inline so
+  // there's no separate Blob table to manage.
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const [coverHovered, setCoverHovered] = useState(false)
+
+  async function uploadCover(file: File) {
+    if (!page?.id) return
+    try {
+      const dataUrl = await fileToDataUrl(file, { maxWidth: 1600, maxHeight: 600, quality: 0.82 })
+      await db.pages.update(page.id, { coverImage: dataUrl, updatedAt: new Date().toISOString() })
+      setPage(prev => prev ? { ...prev, coverImage: dataUrl } : null)
+    } catch (err) {
+      console.error('uploadCover failed', err)
+    }
+  }
+
+  async function removeCover() {
+    if (!page?.id) return
+    await db.pages.update(page.id, { coverImage: null, updatedAt: new Date().toISOString() })
+    setPage(prev => prev ? { ...prev, coverImage: null } : null)
+  }
+
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Loading...</div>
   if (!page) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Page not found</div>
 
@@ -164,6 +188,68 @@ export default function PageCanvas() {
         <span>{focusMode ? 'Exit focus' : 'Focus'}</span>
       </button>
 
+      {/* Cover image banner — Notion-style. Sits OUTSIDE the page-shell so
+          it stretches to fill the main content area, not the 720px column.
+          Hidden in focus mode and when no cover is set. */}
+      {!focusMode && page.coverImage && (
+        <div
+          onMouseEnter={() => setCoverHovered(true)}
+          onMouseLeave={() => setCoverHovered(false)}
+          style={{
+            position: 'relative',
+            width: '100%', height: '200px',
+            backgroundImage: `url('${page.coverImage}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: `center ${page.coverPosition ?? 50}%`,
+            backgroundRepeat: 'no-repeat',
+            marginBottom: '24px',
+          }}
+          data-no-sculpt
+        >
+          <div
+            style={{
+              position: 'absolute', top: '12px', right: '16px',
+              display: 'flex', gap: '6px',
+              opacity: coverHovered ? 1 : 0,
+              transition: 'opacity 150ms ease',
+              pointerEvents: coverHovered ? 'auto' : 'none',
+            }}
+          >
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              style={{
+                padding: '4px 10px', borderRadius: '6px',
+                background: 'rgba(0,0,0,0.55)', color: '#fff',
+                border: 'none', fontSize: '11px', fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >Change cover</button>
+            <button
+              onClick={removeCover}
+              style={{
+                padding: '4px 10px', borderRadius: '6px',
+                background: 'rgba(0,0,0,0.55)', color: '#fff',
+                border: 'none', fontSize: '11px', fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >Remove</button>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input shared by the cover banner + "Add cover" button */}
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={e => {
+          const f = e.target.files?.[0]
+          if (f) uploadCover(f)
+          e.target.value = ''
+        }}
+      />
+
       <div className="page-shell" style={{
         maxWidth: focusMode ? '760px' : '720px',
         margin: '0 auto',
@@ -171,6 +257,22 @@ export default function PageCanvas() {
       }}>
         {!focusMode && (
         <>
+        {/* "+ Add cover" affordance — only shown when there's no cover yet.
+            Sits subtly above the title row; one click opens the file picker. */}
+        {!page.coverImage && (
+          <button
+            onClick={() => coverInputRef.current?.click()}
+            style={{
+              background: 'transparent', border: 'none',
+              color: 'var(--text-tertiary)', fontSize: '12px',
+              cursor: 'pointer', padding: '4px 0', marginBottom: '8px',
+            }}
+            onMouseEnter={e => { (e.currentTarget).style.color = 'var(--text-secondary)' }}
+            onMouseLeave={e => { (e.currentTarget).style.color = 'var(--text-tertiary)' }}
+          >
+            + Add cover
+          </button>
+        )}
         <div data-flat style={{ marginBottom: '16px', position: 'relative' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '12px',

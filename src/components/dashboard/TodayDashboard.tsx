@@ -22,6 +22,7 @@ import { formatTimeString } from '@/lib/timeFormat'
 import TrackerRing from './TrackerRing'
 import { generateReview, ReviewOutput } from '@/lib/aiReview'
 import { useDraggable } from '@dnd-kit/core'
+import { useUserProfile } from '@/hooks/useUserProfile'
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0]
@@ -46,6 +47,7 @@ export default function TodayDashboard() {
 
   const pages = usePagesStore(s => s.pages)
   const loadPages = usePagesStore(s => s.load)
+  const profile = useUserProfile()
   const { definitions: trackers, logs: trackerLogs, load: loadTrackers, getTodayValue, addLog, setTodayValue, getWeekData } = useTrackerStore()
 
   const [tasks, setTasks] = useState<Task[]>([])
@@ -233,7 +235,9 @@ export default function TodayDashboard() {
             color: 'var(--text-primary)',
             lineHeight: 1.2,
           }}>
-            {greet(now)}.
+            {/* Personalised greeting when display_name is set, otherwise
+                falls back to the original generic version. */}
+            {greet(now)}{profile.displayName ? `, ${profile.displayName}` : ''}.
           </h1>
         </header>
 

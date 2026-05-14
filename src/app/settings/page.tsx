@@ -1,12 +1,27 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { db } from '@/db/schema'
 import { PALETTES, FONT_GROUPS, GOOGLE_FONTS_URL } from '@/lib/settings-constants'
 import { saveSetting } from '@/lib/settingsDb'
 import { setUiPref } from '@/hooks/useUiPref'
+import { useUserProfile, saveProfile, initialFor } from '@/hooks/useUserProfile'
+import { fileToDataUrl } from '@/lib/imageUtils'
 
 
 export default function SettingsPage() {
+  const profile = useUserProfile()
+  const [nameDraft, setNameDraft] = useState('')
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  // Sync local draft once the profile loads
+  useEffect(() => {
+    if (profile.loaded) setNameDraft(profile.displayName)
+  }, [profile.loaded, profile.displayName])
+  async function pickAvatar(file: File) {
+    try {
+      const dataUrl = await fileToDataUrl(file, { maxWidth: 256, maxHeight: 256, quality: 0.85 })
+      await saveProfile({ avatarUrl: dataUrl })
+    } catch (err) { console.error('avatar upload failed', err) }
+  }
   const [currentPalette, setCurrentPalette] = useState('Default')
   const [currentFont, setCurrentFont] = useState('System Default')
   const [fontsLoaded, setFontsLoaded] = useState(false)
@@ -195,6 +210,7 @@ export default function SettingsPage() {
           display: 'flex', flexWrap: 'wrap', gap: '4px',
         }}>
           {[
+            ['profile', 'Profile'],
             ['interface', 'Interface'],
             ['appearance', 'Appearance'],
             ['accent', 'Accent'],
@@ -214,6 +230,77 @@ export default function SettingsPage() {
             >{label}</a>
           ))}
         </nav>
+
+        {/* Profile — display name + avatar. Both surface in the sidebar
+            header and the dashboard greeting; click the sidebar avatar to
+            land back here. */}
+        <section id="profile" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Profile</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>Your name and avatar appear in the sidebar and dashboard greeting.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '12px' }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: profile.avatarUrl
+                ? `url('${profile.avatarUrl}') center / cover no-repeat`
+                : 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: '24px', fontWeight: 700,
+              border: '1px solid var(--border)', flexShrink: 0,
+            }}>
+              {!profile.avatarUrl && initialFor(profile.displayName)}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  style={{
+                    padding: '6px 14px', borderRadius: '9999px',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                  }}
+                >{profile.avatarUrl ? 'Change photo' : 'Upload photo'}</button>
+                {profile.avatarUrl && (
+                  <button
+                    onClick={() => saveProfile({ avatarUrl: null })}
+                    style={{
+                      padding: '6px 14px', borderRadius: '9999px',
+                      border: '1px solid var(--border)',
+                      background: 'transparent', color: 'var(--text-tertiary)',
+                      fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >Remove</button>
+                )}
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>JPG / PNG, square crop. Resized to 256px.</span>
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) pickAvatar(f)
+                e.target.value = ''
+              }}
+            />
+          </div>
+          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Display name</label>
+          <input
+            value={nameDraft}
+            onChange={e => setNameDraft(e.target.value)}
+            onBlur={() => { if (nameDraft !== profile.displayName) saveProfile({ displayName: nameDraft.trim() }) }}
+            placeholder="What should we call you?"
+            style={{
+              width: '100%', maxWidth: '320px',
+              padding: '8px 12px', borderRadius: 'var(--radius-base, 8px)',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+              fontSize: '13px', outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+        </section>
 
         {/* Interface Style */}
         <section id="interface" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>

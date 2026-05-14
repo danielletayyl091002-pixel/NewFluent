@@ -12,6 +12,12 @@ export interface Page {
   order: number
   createdAt: string
   updatedAt: string
+  /** Optional banner image (Notion-style cover). Stored as DataURL — keeps
+   *  the field self-contained, no separate Blob table. Compressed client-side
+   *  before save to keep page rows small. */
+  coverImage?: string | null
+  /** Vertical focal point 0..100 (percent). Defaults to 50 (centred). */
+  coverPosition?: number | null
 }
 
 export interface Block {
@@ -296,6 +302,23 @@ class FluentDB extends Dexie {
     // v11 adds Task.linkedPageUid — non-indexed string, no schema
     // string change needed, bump is just for clean upgrade semantics.
     this.version(11).stores({
+      pages: '++id, uid, parentUid, isFavorite',
+      blocks: '++id, uid, pageUid, type, order',
+      tasks: '++id, uid, pageUid, status, dueDate, scheduledDate',
+      settings: '++id, key',
+      financeEntries: '++id, type, category, date',
+      financeCategories: '++id, type',
+      trackerDefinitions: '++id, uid, type, order',
+      trackerLogs: '++id, trackerUid, date',
+      databases: '++id, uid, pageUid',
+      databaseColumns: '++id, uid, databaseUid, order',
+      databaseRows: '++id, uid, databaseUid, order',
+      databaseCells: '++id, uid, rowUid, columnUid',
+      canvasItems: '++id, uid, pageUid, type'
+    })
+    // v12 adds Page.coverImage + Page.coverPosition — non-indexed,
+    // string/number, no schema string change needed.
+    this.version(12).stores({
       pages: '++id, uid, parentUid, isFavorite',
       blocks: '++id, uid, pageUid, type, order',
       tasks: '++id, uid, pageUid, status, dueDate, scheduledDate',
