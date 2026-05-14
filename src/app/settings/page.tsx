@@ -8,6 +8,7 @@ import { useUserProfile, saveProfile, initialFor } from '@/hooks/useUserProfile'
 import { fileToDataUrl } from '@/lib/imageUtils'
 import { useWidgets, toggleWidget, updateWidgetConfig } from '@/hooks/useWidgets'
 import { applySidebarPattern, applyAccentGradient, SidebarPattern } from '@/lib/workspaceSkin'
+import { downloadTheme, importTheme } from '@/lib/themeExport'
 
 
 export default function SettingsPage() {
@@ -523,6 +524,52 @@ export default function SettingsPage() {
                   }}
                 >Remove gradient</button>
               )}
+            </div>
+          </div>
+
+          {/* Theme pack — share/import the visual settings (skin, palette,
+              fonts, interface) as a JSON file. Personal data (name, avatar,
+              page covers, countdown date) is intentionally excluded. */}
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <h3 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Theme pack</h3>
+            <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Save your look as a JSON file you can share. Personal data (name, avatar, page covers) is excluded.</p>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => downloadTheme(profile.displayName ? `${profile.displayName}'s theme` : 'My theme')}
+                style={{
+                  padding: '6px 14px', borderRadius: '9999px',
+                  border: 'none', background: 'var(--accent)',
+                  color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                }}
+              >Export theme</button>
+              <label style={{
+                padding: '6px 14px', borderRadius: '9999px',
+                border: '1px solid var(--border)', background: 'transparent',
+                color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600,
+                cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
+              }}>
+                Import theme
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  style={{ display: 'none' }}
+                  onChange={async e => {
+                    const file = e.target.files?.[0]
+                    e.target.value = ''  // allow re-selecting the same file
+                    if (!file) return
+                    if (!confirm('Importing a theme will overwrite your current visual settings. Continue?')) return
+                    try {
+                      const text = await file.text()
+                      const result = await importTheme(text)
+                      alert(`Theme imported — ${result.applied} setting${result.applied === 1 ? '' : 's'} applied${result.skipped > 0 ? `, ${result.skipped} skipped` : ''}. Reloading…`)
+                      window.location.reload()
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : 'Could not import theme.')
+                    }
+                  }}
+                />
+              </label>
             </div>
           </div>
         </section>
