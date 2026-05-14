@@ -150,11 +150,16 @@ export default function PageCanvas() {
   async function uploadCover(file: File) {
     if (!page?.id) return
     try {
+      // GIFs pass through fileToDataUrl untouched so animations survive;
+      // static images are resized to 1600×600 to keep page rows lean.
       const dataUrl = await fileToDataUrl(file, { maxWidth: 1600, maxHeight: 600, quality: 0.82 })
       await db.pages.update(page.id, { coverImage: dataUrl, updatedAt: new Date().toISOString() })
       setPage(prev => prev ? { ...prev, coverImage: dataUrl } : null)
+      // Notify sidebar so the thumbnail refreshes immediately.
+      window.dispatchEvent(new CustomEvent('page-title-updated'))
     } catch (err) {
       console.error('uploadCover failed', err)
+      alert(err instanceof Error ? err.message : 'Could not upload cover image.')
     }
   }
 
@@ -162,6 +167,7 @@ export default function PageCanvas() {
     if (!page?.id) return
     await db.pages.update(page.id, { coverImage: null, coverPosition: null, updatedAt: new Date().toISOString() })
     setPage(prev => prev ? { ...prev, coverImage: null, coverPosition: null } : null)
+    window.dispatchEvent(new CustomEvent('page-title-updated'))
   }
 
   function startReposition() {
@@ -183,6 +189,8 @@ export default function PageCanvas() {
     setRepositioning(false)
     setDragPosition(null)
     dragStartRef.current = null
+    // Sidebar thumbnail uses coverPosition for crop — refresh it.
+    window.dispatchEvent(new CustomEvent('page-title-updated'))
   }
   function onCoverMouseDown(e: React.MouseEvent<HTMLDivElement>) {
     if (!repositioning) return

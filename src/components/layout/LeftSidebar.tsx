@@ -401,7 +401,20 @@ function PageItem({ page, active, depth, hasChildren, isExpanded, onToggle, onCl
           color: active ? 'var(--accent)' : 'var(--text-primary)'
         }}
       >
-        {page.icon ? (
+        {/* Priority: cover thumbnail > emoji icon > generic file svg.
+            Cover preview reuses the saved focal point so the thumbnail
+            shows the same crop as the page banner. */}
+        {page.coverImage ? (
+          <span style={{
+            width: '18px', height: '18px', flexShrink: 0,
+            borderRadius: '4px',
+            backgroundImage: `url('${page.coverImage}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: `center ${page.coverPosition ?? 50}%`,
+            backgroundRepeat: 'no-repeat',
+            border: '1px solid var(--border)',
+          }} aria-hidden />
+        ) : page.icon ? (
           <span style={{ fontSize: '14px', flexShrink: 0, lineHeight: 1 }}>{page.icon}</span>
         ) : (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, color: 'var(--text-tertiary)' }}>
