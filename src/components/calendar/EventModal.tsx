@@ -854,8 +854,8 @@ function CustomRecurrenceModal({ dateStr, initial, onCancel, onDone }: CustomRec
         {/* Weekly: pick days */}
         {opts.freq === 'WEEKLY' && (
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>Repeat on</div>
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px', textAlign: 'center' }}>Repeat on</div>
+            <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
               {WEEKDAY_CODES.map((code, i) => {
                 const active = opts.byday.includes(code)
                 return (
@@ -864,7 +864,12 @@ function CustomRecurrenceModal({ dateStr, initial, onCancel, onDone }: CustomRec
                     type="button"
                     onClick={() => toggleDay(code)}
                     style={{
+                      // Explicit flex centering so the letter sits dead-center
+                      // regardless of button padding from the global Sculpt rules.
                       width: '32px', height: '32px', borderRadius: '50%',
+                      display: 'inline-flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      padding: 0, lineHeight: 1,
                       background: active ? 'var(--accent)' : 'var(--bg-secondary)',
                       color: active ? 'white' : 'var(--text-secondary)',
                       border: '1px solid var(--border)',
