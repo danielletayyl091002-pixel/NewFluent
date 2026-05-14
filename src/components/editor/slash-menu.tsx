@@ -28,6 +28,7 @@ const commands: SlashItem[] = [
   { title: 'Code Block', command: 'codeBlock', icon: '</>', shortcut: '' },
   { title: 'Divider', command: 'horizontalRule', icon: '\u2014', shortcut: '' },
   { title: 'Callout', command: 'callout', icon: '\uD83D\uDCA1', shortcut: '' },
+  { title: 'Photo', command: 'photo', icon: '\uD83D\uDDBC', shortcut: '' },
   { title: 'Table', command: 'table', icon: '\u229E', shortcut: '' },
   { title: 'Database', command: 'database', icon: '\u25A6', shortcut: '' },
   { title: 'Collapse', command: 'toggle', icon: '\u25B6', shortcut: '' },
@@ -111,6 +112,45 @@ export const suggestion: Omit<SuggestionOptions, 'editor'> = {
           content: [{ type: 'paragraph' }],
         }).run()
         break
+      case 'photo': {
+        // Spawn an ephemeral file input. On change, resize via fileToDataUrl
+        // and insert a PhotoNode at the slash range. If the user cancels
+        // the picker the slash text is removed so the page doesn't
+        // accumulate stray "/photo" fragments.
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = 'image/*'
+        input.style.display = 'none'
+        document.body.appendChild(input)
+        const cleanupRange = () => {
+          // Best-effort: strip the "/photo" text whether or not a file
+          // was chosen. Use try/catch in case the editor was destroyed.
+          try { editor.chain().focus().deleteRange(range).run() } catch {}
+        }
+        input.onchange = async () => {
+          const file = input.files?.[0]
+          input.remove()
+          if (!file) { cleanupRange(); return }
+          try {
+            const { fileToDataUrl } = await import('@/lib/imageUtils')
+            const src = await fileToDataUrl(file, {
+              maxWidth: 1200, maxHeight: 1200, quality: 0.85,
+            })
+            editor.chain().focus().deleteRange(range).insertContent({
+              type: 'photo', attrs: { src },
+            }).run()
+          } catch (err) {
+            console.error('photo insert failed', err)
+            alert(err instanceof Error ? err.message : 'Could not insert photo.')
+            cleanupRange()
+          }
+        }
+        // Fallback for cancel — file inputs don't fire 'change' on cancel,
+        // but the modern 'cancel' event does where supported (Chromium 113+).
+        input.addEventListener('cancel', () => { input.remove(); cleanupRange() })
+        input.click()
+        break
+      }
       default:
         editor.chain().focus().deleteRange(range).setNode('paragraph').run()
         break

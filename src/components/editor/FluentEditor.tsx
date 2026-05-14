@@ -71,6 +71,51 @@ const DatabaseNode = TiptapNode.create({
   },
 })
 
+// ── Photo block ──────────────────────────────────────────────────────────
+// Inline image embed inserted via the /photo slash command. Source is a
+// DataURL (resized client-side via fileToDataUrl) so it lives inside the
+// page's TipTap doc JSON — no separate Blob table needed.
+const PhotoNodeComponent = ({ node }: any) => {
+  const src: string | null = node?.attrs?.src ?? null
+  if (!src) return null
+  return (
+    <NodeViewWrapper>
+      <div data-no-sculpt contentEditable={false} style={{ margin: '12px 0' }}>
+        <img
+          src={src}
+          alt={node.attrs.alt || ''}
+          style={{
+            maxWidth: '100%', height: 'auto', display: 'block',
+            borderRadius: 'var(--radius-base, 8px)',
+          }}
+        />
+      </div>
+    </NodeViewWrapper>
+  )
+}
+
+const PhotoNode = TiptapNode.create({
+  name: 'photo',
+  group: 'block',
+  atom: true,           // selectable as a single unit; backspace removes whole node
+  draggable: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: '' },
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'img[src]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['img', mergeAttributes(HTMLAttributes, { class: 'fluent-photo' })]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(PhotoNodeComponent)
+  },
+})
+
 function ToggleView({ node, updateAttributes }: any) {
   const [open, setOpen] = useState(node.attrs.open || false)
   const [title, setTitle] = useState(node.attrs.title || '')
@@ -208,6 +253,7 @@ export default function FluentEditor({ pageUid, initialContent }: FluentEditorPr
       SlashCommand,
       Callout,
       DatabaseNode,
+      PhotoNode,
       ToggleNode,
       Table.configure({ resizable: true }),
       TableRow,
