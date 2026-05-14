@@ -7,11 +7,42 @@ import { setUiPref } from '@/hooks/useUiPref'
 import { useUserProfile, saveProfile, initialFor } from '@/hooks/useUserProfile'
 import { fileToDataUrl } from '@/lib/imageUtils'
 import { useWidgets, toggleWidget, updateWidgetConfig } from '@/hooks/useWidgets'
+import { applySidebarPattern, applyAccentGradient, SidebarPattern } from '@/lib/workspaceSkin'
 
 
 export default function SettingsPage() {
   const profile = useUserProfile()
   const { widgets } = useWidgets()
+  // Workspace skin state (loaded from db.settings on mount)
+  const [sidebarPattern, setSidebarPattern] = useState<SidebarPattern>('none')
+  const [accentTo, setAccentTo] = useState<string>('')
+  useEffect(() => {
+    async function loadSkin() {
+      const sp = await db.settings.where('key').equals('sidebar_pattern').first()
+      const ag = await db.settings.where('key').equals('accent_gradient_to').first()
+      if (sp?.value) setSidebarPattern(sp.value as SidebarPattern)
+      if (ag?.value) setAccentTo(ag.value)
+    }
+    loadSkin()
+  }, [])
+  async function saveSidebarPattern(p: SidebarPattern) {
+    setSidebarPattern(p)
+    applySidebarPattern(p)
+    const exist = await db.settings.where('key').equals('sidebar_pattern').first()
+    if (exist?.id) await db.settings.update(exist.id, { value: p })
+    else await db.settings.add({ key: 'sidebar_pattern', value: p })
+  }
+  async function saveAccentTo(c: string) {
+    setAccentTo(c)
+    applyAccentGradient(c || null)
+    const exist = await db.settings.where('key').equals('accent_gradient_to').first()
+    if (exist?.id) {
+      if (c) await db.settings.update(exist.id, { value: c })
+      else await db.settings.delete(exist.id)
+    } else if (c) {
+      await db.settings.add({ key: 'accent_gradient_to', value: c })
+    }
+  }
   const [nameDraft, setNameDraft] = useState('')
   const avatarInputRef = useRef<HTMLInputElement>(null)
   // Sync local draft once the profile loads
@@ -214,6 +245,7 @@ export default function SettingsPage() {
           {[
             ['profile', 'Profile'],
             ['widgets', 'Widgets'],
+            ['workspace-skin', 'Workspace'],
             ['interface', 'Interface'],
             ['appearance', 'Appearance'],
             ['accent', 'Accent'],
@@ -245,7 +277,7 @@ export default function SettingsPage() {
               width: '64px', height: '64px', borderRadius: '50%',
               background: profile.avatarUrl
                 ? `url('${profile.avatarUrl}') center / cover no-repeat`
-                : 'var(--accent)',
+                : 'var(--accent-gradient)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontSize: '24px', fontWeight: 700,
               border: '1px solid var(--border)', flexShrink: 0,
@@ -419,6 +451,79 @@ export default function SettingsPage() {
                 </div>
               )
             })}
+          </div>
+        </section>
+
+        {/* Workspace skin — sidebar pattern + accent gradient. Both are
+            cosmetic flourishes that personalise the chrome without
+            changing layout or contrast. */}
+        <section id="workspace-skin" style={{ marginBottom: '40px', scrollMarginTop: '80px' }}>
+          <h2 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Workspace</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>Personalise the sidebar and accent.</p>
+
+          {/* Sidebar pattern */}
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Sidebar pattern</h3>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['none', 'dots', 'grid'] as const).map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => saveSidebarPattern(p)}
+                  style={{
+                    padding: '6px 16px', borderRadius: '9999px',
+                    border: sidebarPattern === p ? 'none' : '1px solid var(--border)',
+                    background: sidebarPattern === p ? 'var(--accent)' : 'transparent',
+                    color: sidebarPattern === p ? 'white' : 'var(--text-secondary)',
+                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                    textTransform: 'capitalize',
+                  }}
+                >{p}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Accent gradient — picks the second colour. The first colour is
+              the active accent (which the palette section already manages). */}
+          <div>
+            <h3 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>Accent gradient</h3>
+            <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Adds a second colour to the accent gradient — visible on your avatar circle.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Live preview swatch */}
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '50%',
+                background: accentTo
+                  ? `linear-gradient(135deg, var(--accent), ${accentTo})`
+                  : 'var(--accent)',
+                border: '1px solid var(--border)',
+              }} />
+              <label style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '4px 10px', borderRadius: '9999px',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+                fontSize: '12px', cursor: 'pointer',
+              }}>
+                <input
+                  type="color"
+                  value={accentTo || '#A855F7'}
+                  onChange={e => saveAccentTo(e.target.value)}
+                  style={{ width: '20px', height: '20px', border: 'none', padding: 0, background: 'transparent', cursor: 'pointer' }}
+                />
+                {accentTo ? accentTo.toUpperCase() : 'Pick second colour'}
+              </label>
+              {accentTo && (
+                <button
+                  type="button"
+                  onClick={() => saveAccentTo('')}
+                  style={{
+                    padding: '4px 10px', borderRadius: '9999px',
+                    border: '1px solid var(--border)', background: 'transparent',
+                    color: 'var(--text-tertiary)', fontSize: '11px', cursor: 'pointer',
+                  }}
+                >Remove gradient</button>
+              )}
+            </div>
           </div>
         </section>
 

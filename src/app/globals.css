@@ -11,6 +11,13 @@
   --border: #E5E7EB;
   --accent: #3B82F6;
   --accent-light: #EFF6FF;
+  /* Workspace skin defaults — overridden by ClientLayout once settings load.
+     --sidebar-pattern is an SVG data-URI when a pattern is active; 'none'
+     leaves the sidebar's solid colour untouched. --accent-gradient falls
+     back to the solid accent so any consumer using `background:
+     var(--accent-gradient)` always renders correctly. */
+  --sidebar-pattern: none;
+  --accent-gradient: var(--accent);
 }
 
 [data-theme="dark"] {

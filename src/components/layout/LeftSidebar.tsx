@@ -149,7 +149,11 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
       minWidth: collapsed ? '64px' : '220px',
       height: '100vh',
       borderRight: '1px solid var(--border)',
+      // Pattern (if set) layers over the solid sidebar colour. Default
+      // --sidebar-pattern is 'none' so this is a no-op until configured.
       background: 'var(--bg-sidebar)',
+      backgroundImage: 'var(--sidebar-pattern)',
+      backgroundRepeat: 'repeat',
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       transition: 'width 200ms ease-in-out, min-width 200ms ease-in-out',
@@ -171,13 +175,15 @@ export default function LeftSidebar({ collapsed, toggleLeft, refreshKey = 0, onN
         }}
       >
         {/* Avatar circle — image when set, initial otherwise. Click goes
-            to /settings so the user can edit name + photo. */}
+            to /settings so the user can edit name + photo. Falls back to
+            the accent gradient (var(--accent-gradient) = solid accent
+            unless the user picked a gradient endpoint in /settings). */}
         <div style={{
           width: '28px', height: '28px', flexShrink: 0,
           borderRadius: '50%',
           background: profile.avatarUrl
             ? `url('${profile.avatarUrl}') center / cover no-repeat`
-            : 'var(--accent)',
+            : 'var(--accent-gradient)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#fff', fontSize: '13px', fontWeight: 700,
           border: '1px solid var(--border)',

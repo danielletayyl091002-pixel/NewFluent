@@ -11,6 +11,7 @@ import QuickCapture from '@/components/ui/QuickCapture'
 import Tour from '@/components/ui/Tour'
 // OnboardingModal kept on disk for potential future use but not imported here.
 import ErrorToast from '@/components/ui/ErrorToast'
+import { applySidebarPattern, applyAccentGradient, SidebarPattern } from '@/lib/workspaceSkin'
 import { useSidebarVisibility } from '@/hooks/useSidebarVisibility'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { registerErrorHandler } from '@/lib/dbError'
@@ -243,6 +244,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           document.body.style.fontFamily = fontMap[font.value]
         }
       }
+
+      // Workspace skin — sidebar pattern + accent gradient. Applied early
+      // so the sidebar paints with the chosen pattern on first render.
+      const sidebarPattern = get('sidebar_pattern')
+      applySidebarPattern((sidebarPattern?.value as SidebarPattern) || 'none')
+      const accentGradTo = get('accent_gradient_to')
+      applyAccentGradient(accentGradTo?.value || null)
 
       const palette = get('palette')
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'
