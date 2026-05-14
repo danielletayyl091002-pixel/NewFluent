@@ -139,6 +139,13 @@ export default function PageCanvas() {
   // there's no separate Blob table to manage.
   const coverInputRef = useRef<HTMLInputElement>(null)
   const [coverHovered, setCoverHovered] = useState(false)
+  // Reposition state — when true, the cover enters drag-to-adjust mode
+  // (Notion-style). dragPosition holds the in-flight position; saved to
+  // page.coverPosition when the user clicks "Save position".
+  const [repositioning, setRepositioning] = useState(false)
+  const [dragPosition, setDragPosition] = useState<number | null>(null)
+  const dragStartRef = useRef<{ y: number; startPos: number } | null>(null)
+  const COVER_HEIGHT = 200
 
   async function uploadCover(file: File) {
     if (!page?.id) return
@@ -153,9 +160,72 @@ export default function PageCanvas() {
 
   async function removeCover() {
     if (!page?.id) return
-    await db.pages.update(page.id, { coverImage: null, updatedAt: new Date().toISOString() })
-    setPage(prev => prev ? { ...prev, coverImage: null } : null)
+    await db.pages.update(page.id, { coverImage: null, coverPosition: null, updatedAt: new Date().toISOString() })
+    setPage(prev => prev ? { ...prev, coverImage: null, coverPosition: null } : null)
   }
+
+  function startReposition() {
+    setRepositioning(true)
+    setDragPosition(page?.coverPosition ?? 50)
+  }
+  function cancelReposition() {
+    setRepositioning(false)
+    setDragPosition(null)
+    dragStartRef.current = null
+  }
+  async function saveReposition() {
+    if (!page?.id || dragPosition == null) return
+    await db.pages.update(page.id, {
+      coverPosition: dragPosition,
+      updatedAt: new Date().toISOString(),
+    })
+    setPage(prev => prev ? { ...prev, coverPosition: dragPosition } : null)
+    setRepositioning(false)
+    setDragPosition(null)
+    dragStartRef.current = null
+  }
+  function onCoverMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    if (!repositioning) return
+    e.preventDefault()
+    dragStartRef.current = { y: e.clientY, startPos: dragPosition ?? 50 }
+    function onMove(ev: MouseEvent) {
+      if (!dragStartRef.current) return
+      const dy = ev.clientY - dragStartRef.current.y
+      // Map pixel delta to percent: each cover-height drag = 100% travel.
+      // Drag DOWN (positive dy) → focus shifts UP in image (lower position).
+      const next = Math.max(0, Math.min(100,
+        dragStartRef.current.startPos - (dy / COVER_HEIGHT) * 100
+      ))
+      setDragPosition(next)
+    }
+    function onUp() {
+      dragStartRef.current = null
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+  // Effective position = live drag preview when repositioning, else saved.
+  const effectiveCoverPos = repositioning && dragPosition != null
+    ? dragPosition
+    : (page?.coverPosition ?? 50)
+
+  // Esc cancels cover reposition mode. Separate effect (not folded into
+  // the F-key handler above) because that one runs before `repositioning`
+  // is declared — folding causes a TDZ error.
+  useEffect(() => {
+    if (!repositioning) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        cancelReposition()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repositioning])
 
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Loading...</div>
   if (!page) return <div style={{ padding: '40px', color: 'var(--text-tertiary)' }}>Page not found</div>
@@ -190,49 +260,108 @@ export default function PageCanvas() {
 
       {/* Cover image banner — Notion-style. Sits OUTSIDE the page-shell so
           it stretches to fill the main content area, not the 720px column.
-          Hidden in focus mode and when no cover is set. */}
+          Hidden in focus mode and when no cover is set. In reposition mode
+          the cover acts as a draggable surface that updates the focal point
+          in real time. */}
       {!focusMode && page.coverImage && (
         <div
           onMouseEnter={() => setCoverHovered(true)}
           onMouseLeave={() => setCoverHovered(false)}
+          onMouseDown={onCoverMouseDown}
           style={{
             position: 'relative',
-            width: '100%', height: '200px',
+            width: '100%', height: `${COVER_HEIGHT}px`,
             backgroundImage: `url('${page.coverImage}')`,
             backgroundSize: 'cover',
-            backgroundPosition: `center ${page.coverPosition ?? 50}%`,
+            backgroundPosition: `center ${effectiveCoverPos}%`,
             backgroundRepeat: 'no-repeat',
             marginBottom: '24px',
+            cursor: repositioning ? (dragStartRef.current ? 'grabbing' : 'grab') : 'default',
+            userSelect: repositioning ? 'none' : 'auto',
           }}
           data-no-sculpt
         >
+          {/* Bottom-centre hint while repositioning */}
+          {repositioning && (
+            <div style={{
+              position: 'absolute', bottom: '12px', left: '50%',
+              transform: 'translateX(-50%)',
+              padding: '4px 12px', borderRadius: '9999px',
+              background: 'rgba(0,0,0,0.6)', color: '#fff',
+              fontSize: '11px', fontWeight: 600,
+              pointerEvents: 'none',
+            }}>
+              Drag image to reposition · {Math.round(effectiveCoverPos)}%
+            </div>
+          )}
+          {/* Action tray — switches modes between idle and repositioning.
+              Always visible while repositioning so the user can confirm
+              or cancel; hover-revealed otherwise. Right offset leaves
+              clearance for the Focus button which lives in the outer
+              scroll container at right:16px. */}
           <div
             style={{
-              position: 'absolute', top: '12px', right: '16px',
+              position: 'absolute', top: '12px', right: '110px',
               display: 'flex', gap: '6px',
-              opacity: coverHovered ? 1 : 0,
+              opacity: (coverHovered || repositioning) ? 1 : 0,
               transition: 'opacity 150ms ease',
-              pointerEvents: coverHovered ? 'auto' : 'none',
+              pointerEvents: (coverHovered || repositioning) ? 'auto' : 'none',
             }}
           >
-            <button
-              onClick={() => coverInputRef.current?.click()}
-              style={{
-                padding: '4px 10px', borderRadius: '6px',
-                background: 'rgba(0,0,0,0.55)', color: '#fff',
-                border: 'none', fontSize: '11px', fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >Change cover</button>
-            <button
-              onClick={removeCover}
-              style={{
-                padding: '4px 10px', borderRadius: '6px',
-                background: 'rgba(0,0,0,0.55)', color: '#fff',
-                border: 'none', fontSize: '11px', fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >Remove</button>
+            {repositioning ? (
+              <>
+                <button
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={saveReposition}
+                  style={{
+                    padding: '4px 10px', borderRadius: '6px',
+                    background: 'var(--accent)', color: '#fff',
+                    border: 'none', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >Save position</button>
+                <button
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={cancelReposition}
+                  style={{
+                    padding: '4px 10px', borderRadius: '6px',
+                    background: 'rgba(0,0,0,0.55)', color: '#fff',
+                    border: 'none', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >Cancel</button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => coverInputRef.current?.click()}
+                  style={{
+                    padding: '4px 10px', borderRadius: '6px',
+                    background: 'rgba(0,0,0,0.55)', color: '#fff',
+                    border: 'none', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >Change cover</button>
+                <button
+                  onClick={startReposition}
+                  style={{
+                    padding: '4px 10px', borderRadius: '6px',
+                    background: 'rgba(0,0,0,0.55)', color: '#fff',
+                    border: 'none', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >Reposition</button>
+                <button
+                  onClick={removeCover}
+                  style={{
+                    padding: '4px 10px', borderRadius: '6px',
+                    background: 'rgba(0,0,0,0.55)', color: '#fff',
+                    border: 'none', fontSize: '11px', fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >Remove</button>
+              </>
+            )}
           </div>
         </div>
       )}
