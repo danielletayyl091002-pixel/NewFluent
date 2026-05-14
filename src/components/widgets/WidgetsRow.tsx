@@ -3,6 +3,8 @@ import { useWidgets } from '@/hooks/useWidgets'
 import ClockWidget from './ClockWidget'
 import CountdownWidget from './CountdownWidget'
 import QuoteWidget from './QuoteWidget'
+import PomodoroWidget from './PomodoroWidget'
+import WeatherWidget from './WeatherWidget'
 
 // Renders the user's enabled widgets in a horizontally-scrolling row.
 // Returns null when nothing is enabled so the dashboard collapses cleanly.
@@ -27,6 +29,8 @@ export default function WidgetsRow() {
           case 'clock':     return <ClockWidget key={w.id} />
           case 'countdown': return <CountdownWidget key={w.id} config={w.config} />
           case 'quote':     return <QuoteWidget key={w.id} />
+          case 'pomodoro':  return <PomodoroWidget key={w.id} config={w.config} />
+          case 'weather':   return <WeatherWidget key={w.id} config={w.config} />
           default:          return null
         }
       })}

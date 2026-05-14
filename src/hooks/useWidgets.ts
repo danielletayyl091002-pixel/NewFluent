@@ -17,10 +17,14 @@ const SETTING_KEY = 'widgets_state'
 const EVENT_NAME = 'widgets-updated'
 
 // Defaults — order matters; this is also the dashboard render order.
+// Pomodoro and Weather default OFF since they need a deliberate opt-in
+// (timer notifications, geolocation permission).
 export const DEFAULT_WIDGETS: WidgetState[] = [
-  { id: 'clock',     enabled: true, config: {} },
-  { id: 'countdown', enabled: true, config: { date: '', label: 'New Year' } },
-  { id: 'quote',     enabled: true, config: {} },
+  { id: 'clock',     enabled: true,  config: {} },
+  { id: 'countdown', enabled: true,  config: { date: '', label: 'New Year' } },
+  { id: 'quote',     enabled: true,  config: {} },
+  { id: 'pomodoro',  enabled: false, config: { durationMin: 25 } },
+  { id: 'weather',   enabled: false, config: { unit: 'C' } },
 ]
 
 export function useWidgets(): { widgets: WidgetState[]; loaded: boolean } {

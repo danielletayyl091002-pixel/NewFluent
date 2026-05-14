@@ -317,6 +317,8 @@ export default function SettingsPage() {
                 clock:     { label: 'Clock',     desc: 'Live time and date' },
                 countdown: { label: 'Countdown', desc: 'Days until a date you choose' },
                 quote:     { label: 'Quote',     desc: 'A new short quote each day' },
+                pomodoro:  { label: 'Pomodoro',  desc: '25-minute focus timer with start / pause / reset' },
+                weather:   { label: 'Weather',   desc: 'Current temp + condition for your location' },
               }
               const m = meta[w.id]
               if (!m) return null
@@ -366,6 +368,51 @@ export default function SettingsPage() {
                             fontSize: '12px', outline: 'none',
                           }}
                         />
+                      </div>
+                    )}
+                    {w.id === 'pomodoro' && w.enabled && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        <span>Session length:</span>
+                        <input
+                          type="number" min={1} max={120}
+                          value={typeof w.config.durationMin === 'number' ? w.config.durationMin : 25}
+                          onChange={e => updateWidgetConfig('pomodoro', {
+                            durationMin: Math.max(1, Math.min(120, parseInt(e.target.value, 10) || 25)),
+                            // Reset timer state when duration changes so the
+                            // display reflects the new length immediately.
+                            endsAt: null, pausedRemaining: null,
+                          }, widgets)}
+                          style={{
+                            width: '56px', padding: '4px 8px',
+                            borderRadius: 'var(--radius-base, 6px)',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-primary)', color: 'var(--text-primary)',
+                            fontSize: '12px', outline: 'none',
+                          }}
+                        />
+                        <span>minutes</span>
+                      </div>
+                    )}
+                    {w.id === 'weather' && w.enabled && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        <span>Units:</span>
+                        {(['C', 'F'] as const).map(u => {
+                          const active = (w.config.unit ?? 'C') === u
+                          return (
+                            <button
+                              key={u}
+                              type="button"
+                              onClick={() => updateWidgetConfig('weather', { unit: u }, widgets)}
+                              style={{
+                                padding: '3px 10px', borderRadius: '9999px',
+                                border: '1px solid var(--border)',
+                                background: active ? 'var(--accent)' : 'transparent',
+                                color: active ? 'white' : 'var(--text-secondary)',
+                                fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >°{u}</button>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
