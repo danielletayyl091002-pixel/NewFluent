@@ -54,6 +54,44 @@ export default function TodayDashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [ringedUids, setRingedUids] = useState<string[]>([])
 
+  // Daily intention — single per-day commitment device. Stored as one
+  // settings row: { date, text, done }. Auto-rolls over each day (if the
+  // stored date isn't today, treat as empty).
+  const [intention, setIntention] = useState<{ text: string; done: boolean } | null>(null)
+  const [intentionDraft, setIntentionDraft] = useState('')
+  const [intentionLoaded, setIntentionLoaded] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      const row = await db.settings.where('key').equals('daily_intention').first()
+      if (row?.value) {
+        try {
+          const parsed = JSON.parse(row.value)
+          if (parsed.date === today) setIntention({ text: parsed.text, done: !!parsed.done })
+        } catch { /* ignore */ }
+      }
+      setIntentionLoaded(true)
+    }
+    load()
+  }, [today])
+
+  async function saveIntention(text: string, done: boolean) {
+    if (!text.trim()) return
+    const value = JSON.stringify({ date: today, text: text.trim(), done })
+    const exist = await db.settings.where('key').equals('daily_intention').first()
+    if (exist?.id) await db.settings.update(exist.id, { value })
+    else await db.settings.add({ key: 'daily_intention', value })
+    setIntention({ text: text.trim(), done })
+    setIntentionDraft('')
+  }
+
+  async function clearIntention() {
+    const exist = await db.settings.where('key').equals('daily_intention').first()
+    if (exist?.id) await db.settings.delete(exist.id)
+    setIntention(null)
+    setIntentionDraft('')
+  }
+
   useEffect(() => { loadPages(); loadTrackers() }, [loadPages, loadTrackers])
 
   useEffect(() => {
@@ -266,6 +304,91 @@ export default function TodayDashboard() {
             )
           })()}
         </header>
+
+        {/* Daily intention — single commitment device pinned at the top.
+            Empty state asks "What's the one thing you want to do today?";
+            once set, the intention shows with a checkbox to mark done +
+            a Clear button. Auto-rolls over each day so users can't carry
+            yesterday's intention into today by accident. */}
+        {intentionLoaded && (
+          <section
+            aria-label="Today's focus"
+            style={{
+              marginBottom: '20px',
+              padding: '14px 18px',
+              borderRadius: 'var(--radius-card, 12px)',
+              background: intention?.done
+                ? 'var(--bg-secondary)'
+                : 'var(--accent-light)',
+              border: `1px solid ${intention?.done ? 'var(--border)' : 'var(--accent)'}`,
+              transition: 'background 200ms, border-color 200ms',
+            }}
+          >
+            <div style={{
+              fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: intention?.done ? 'var(--text-tertiary)' : 'var(--accent)',
+              marginBottom: '6px',
+            }}>
+              Today's focus
+            </div>
+            {!intention ? (
+              <input
+                value={intentionDraft}
+                onChange={e => setIntentionDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && intentionDraft.trim()) {
+                    e.preventDefault()
+                    saveIntention(intentionDraft, false)
+                  }
+                }}
+                onBlur={() => {
+                  if (intentionDraft.trim()) saveIntention(intentionDraft, false)
+                }}
+                placeholder="What's the one thing you want to do today?"
+                style={{
+                  width: '100%', fontSize: '15px', fontWeight: 500,
+                  border: 'none', outline: 'none', background: 'transparent',
+                  padding: '4px 0', color: 'var(--text-primary)',
+                  fontFamily: 'inherit', boxSizing: 'border-box',
+                }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={() => saveIntention(intention.text, !intention.done)}
+                  aria-label={intention.done ? 'Mark not done' : 'Mark done'}
+                  title={intention.done ? 'Click to unmark' : 'Click to mark done'}
+                  style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    border: `2px solid ${intention.done ? 'var(--accent)' : 'var(--text-tertiary)'}`,
+                    background: intention.done ? 'var(--accent)' : 'transparent',
+                    color: '#fff', fontSize: '12px', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', flexShrink: 0, padding: 0,
+                    transition: 'background 150ms, border-color 150ms',
+                  }}
+                >{intention.done ? '✓' : ''}</button>
+                <span style={{
+                  flex: 1, fontSize: '15px', fontWeight: 600,
+                  color: intention.done ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                  textDecoration: intention.done ? 'line-through' : 'none',
+                  textDecorationThickness: '1.5px',
+                  transition: 'color 150ms',
+                }}>{intention.text}</span>
+                <button
+                  onClick={clearIntention}
+                  title="Clear today's focus"
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'var(--text-tertiary)', fontSize: '11px',
+                    cursor: 'pointer', padding: '4px 8px',
+                  }}
+                >Clear</button>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* KPI strip — only the two action-relevant counts on the
             dashboard. Pages/Trackers totals were noise (visible from the
